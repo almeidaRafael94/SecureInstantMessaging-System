@@ -11,6 +11,7 @@ waitForClients ( ServerSocket s )
 
     try {
 
+
 	while (true) {
 	    Socket c = s.accept();
 	    ServerActions handler = new ServerActions( c, registry );

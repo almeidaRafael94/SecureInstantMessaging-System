@@ -58,7 +58,7 @@ sendResult ( String type, String extra )
      msg += "}\n";
 
      try {
-	 System.out.print( "Send result: " + msg );
+	 System.out.print( "Send result: " + msg);
 	 out.write ( msg.getBytes( StandardCharsets.UTF_8 ) );
      } catch (Exception e ) {}
 }
@@ -147,7 +147,7 @@ executeCommand ( JsonObject data )
 			 // Original 
 			 //JsonElement id = data.get( "dst" );
 			 
-			 // id in the data or patload ?
+			 // id in the data or payload ?
 		     JsonElement id = payload.get("dst");
 	
 		     if (id == null) {
@@ -167,7 +167,9 @@ executeCommand ( JsonObject data )
 		     }
 	
 		     try {
-			 target.write( data.toString().getBytes( StandardCharsets.UTF_8 ) );
+		     String toSend =  data.toString() + "\n"; 
+			 target.write( toSend.getBytes( StandardCharsets.UTF_8 ));
+			 target.flush();
 		     } catch (Exception e) {}
 		 }
 		 else {
