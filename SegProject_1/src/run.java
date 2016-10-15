@@ -41,13 +41,27 @@ public class run {
 	        //System.out.println("list command by client2: done");
 	        
 	        //test connection between 2 clients
-	        client1.setSrcDst(client1.getNONCE(), client2.getNONCE());
-	        client1.send("secure", "client-connect");
+	        client1.setSrc(client1.getNONCE());
+	        client1.setDst(client2.getNONCE());
+	        client2.setSrc(client2.getNONCE());
+	        client2.setDst(client1.getNONCE());
 	        
+	        client1.send("secure", "client-connect");
+	        client2.send("secure", "client-connect");
+	        
+	        client1.send("secure", "client-com");
+	        client2.send("secure", "client-com");
+	        
+	        client1.send("secure", "ack");
+	        client2.send("secure", "ack");
+	        
+	        client1.send("secure", "client-disconnect");
+	        client2.send("secure", "client-disconnect"); 
+	       	        
 	        
 	        //client1.send("connect");
 	        //client1.send("secure");
-	        //client1.disconnect();
+	        client1.disconnect();
 			
 	        
 	        //client1.receive();

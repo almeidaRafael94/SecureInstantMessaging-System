@@ -4,11 +4,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
 import org.json.JSONException;
@@ -30,8 +29,6 @@ public class Client
     private DataOutputStream os;
     private BufferedReader in;
     
-    private BufferedReader inIO;
-    private PrintWriter outIO;
     private Socket socket;
 	
 	JsonElement description; // JSON description of the client, including id
@@ -77,43 +74,50 @@ public class Client
 	
 	public boolean connected()
     {
-    	return socket!=null && outIO != null && socket.isConnected() && !outIO.checkError();
+    	return socket!=null && os != null && socket.isConnected();// && !os.checkError();
     }
 	
     //Connects to the server and creates a thread to process requests
 	public void start() throws UnknownHostException, IOException
 	{
+	try {
 		socket = new Socket(ip, port); 	
-		inIO = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        outIO = new PrintWriter(socket.getOutputStream(), true);
-        
         is = new DataInputStream(socket.getInputStream());
 	    os = new DataOutputStream(socket.getOutputStream());
-        
+    
       //Create new Thread to handle message receiving
-        thread = new Thread()
-        {
+	  
+        //thread = new Thread()
+	    new Thread(new Runnable()
+	    {  
             public void run()
             {
                 while(true)
-                {
+                {	
+                	
                 	//Read Message from the server
 					try
-					{
-						in = new BufferedReader(new InputStreamReader(is));
+					{	
 						
+						in = new BufferedReader(new InputStreamReader(is));
 						String inputLine;
 					    while ((inputLine = in.readLine()) != null)
-					        System.out.println(inputLine);
-					
+					        System.out.println("ACK RECEIVED by: " + client_name + " : " + inputLine + "\n");
+						
 					}
 					catch(IOException e){}
                 }
             }
-         };
+	    }).start();
         
          //Start thread
-         thread.start();
+         //thread.start();
+        
+	    
+	    
+		}catch (IOException ex) {
+	        System.err.println("<-cliente->: " + ex.getMessage());
+	     }
 	}
 	
 	// Send message to server 
@@ -122,61 +126,6 @@ public class Client
 		this.type = type;
 		json = new JsonObject();
 		json.addProperty("type", type);
-		
-		/*
-		switch(type)
-		{
-			case "connect":
-				phase += 1;
-		    	//client_name = "Rafael";
-		    	data = "<JSON or base64 encoded if binary (optional)>";
-		    	
-		    	json.addProperty("type", type);
-		        json.addProperty("phase", phase);
-		        json.addProperty("name", client_name);
-		        json.addProperty("id", id);
-		        json.addProperty("ciphers",ciphers);
-		        json.addProperty("data", data);
-		        		    	
-				break;
-			case "secure":
-				payload = new JsonObject();
-				sa_data = "";
-				payload = null;
-				json.addProperty("sa_data", data);
-				json.addProperty("payload", data);
-				break;
-			case "list":
-				data =  "<JSON or base64 encoded if binary (optional)>";
-				json.addProperty("data", data);
-				break;
-			case "client-connect":
-				phase += 1;
-				data = "Client1 to Client 2: hi :)";
-				json.addProperty("src", src);
-				json.addProperty("dst", dst);
-				json.addProperty("phase", phase);
-				json.addProperty("ciphers", ciphers);
-				json.addProperty("data", data);
-				break;
-			case "client-disconnect":
-				src = "";
-				dst = "";
-				data = "";
-				json.addProperty("src", src);
-				json.addProperty("dst", dst);
-				json.addProperty("src", data);
-				break;
-			case "client-com":
-				src = "";
-				dst = "";
-				data = "";
-				json.addProperty("src", src);
-				json.addProperty("dst", dst);
-				json.addProperty("src", data);
-				break;
-		}
-		*/
 		
 		if(type.equals("connect"))
 		{
@@ -205,7 +154,6 @@ public class Client
 					payload.addProperty("data", data);
 					break;
 				case "client-connect":
-					
 					phase += 1;
 					data = "Client1 to Client 2: hi :)";
 					payload.addProperty("src", src);
@@ -240,53 +188,49 @@ public class Client
 			System.err.println("Invalid command type");
 		}
 		
-		System.out.println("JSON: " + json.toString());
-	    os.write(json.toString().getBytes());
-	    
-	    /*
-	    BufferedReader in = new BufferedReader(new InputStreamReader(is));
-	    String inputLine;
-	    while ((inputLine = in.readLine()) != null)
-	        System.out.println(inputLine)
-	        */
-		
+		System.out.println("JSON send by: " + client_name + " : " + json.toString());
+	    os.write(json.toString().getBytes( StandardCharsets.UTF_8 ));
+	    os.flush();
 	}
-	public void receive() throws UnsupportedEncodingException, IOException
-	{
-		
-		try (InputStreamReader isr = new InputStreamReader(
-        		socket.getInputStream(),"UTF_8")) {
-			
-        System.out.println(isr.read());
-        }
-        
-	}
-	
+
 	// client disconnect 
 	public void disconnect()
     {
     	try
     	{
+    		//is.close();
+    		//os.close();
+    	    //in.close();
     		thread.interrupt();
 	    	socket.shutdownInput();
 	    	socket.shutdownOutput();
     	}
     	catch(Exception e){}
     }
+	
+	//Generate identification number
 	private String generateNONCE()
 	{
 		SecureRandom random = new SecureRandom();
 		return new BigInteger(130, random).toString(32);
 	}
+	
+	//Get client identification number
 	public String getNONCE()
 	{
 		return id;
 	}
 	
-	//test function, remove
-	public void setSrcDst(String src, String dst)
+	// Set destination id
+	public void setDst(String dst)
+	{
+		this.dst = dst;
+		
+	}
+	
+	//Set source id
+	public void setSrc(String src)
 	{
 		this.src = src;
-		this.dst = dst;
 	}
 }
