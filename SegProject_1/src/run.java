@@ -11,12 +11,25 @@ public class run {
 	static int port;
 	static InetAddress address;
 	
+	static Client client1;
+	static Client client2;
+	//Design application
+	static ClientDesign clientWindow;
+	
 	public static void main(String[] args) throws IOException, JSONException 
 	{	
-		Client client1;
-		Client client2;
-		try
-        {	
+		
+		/* design client
+				java.awt.EventQueue.invokeLater(new Runnable() {
+		            public void run() {
+		            	clientWindow = new ClientDesign();
+		        		clientWindow.frmSecuruty2016.setVisible(true);
+		            }
+		        });
+		*/
+		try 
+		{
+			
 			
 			host = "127.0.0.1";
 	        port = 9090;
@@ -65,11 +78,10 @@ public class run {
 			
 	        
 	        //client1.receive();
-        }
-        catch (Exception exception)
-        {
-            exception.printStackTrace();
-        }
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		finally
         {
             //Closing the socket
@@ -83,5 +95,4 @@ public class run {
             }
         }
 	}
-
 }

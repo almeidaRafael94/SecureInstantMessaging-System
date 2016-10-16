@@ -1,17 +1,17 @@
 import java.awt.Color;
-import java.awt.EventQueue;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.AbstractButton;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
-import javax.swing.JToggleButton;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.text.BadLocationException;
@@ -19,17 +19,15 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-public class ClientDesign {
+public class ClientDesign implements WindowListener,ActionListener  {
 
-	JFrame frame;
-	private JTextArea receiveTextArea;
-	private JTextArea sendTextArea;
+	JFrame frmSecuruty2016;
 	private JSeparator separator_1;
 	private JTextField usernameTextField;
 	private JTextPane logTextPane;
 	private JLabel lblLog;
-	private JToggleButton tglbtnNewToggleButton;
-	private ActionListener actionListener;
+	private JButton btnConnect;
+
 	private JLabel lblSendTo;
 	private JTextField destinationUsernameTextField;
 	private JButton btnSend;
@@ -37,177 +35,275 @@ public class ClientDesign {
     private Color color = null;
     private StyledDocument doc;
     private Style style;
+    private JButton btnNButtonEw;
+    private JScrollPane sendScrollPane;
+    private JTextPane sendTextArea;
+    private JScrollPane receiveScollPane;
+    private JTextPane receiveTextArea;
+    private JLabel usernameLabel;
+    
+    private boolean isConnected = false;
+    private boolean isConnectedToServer = false;
 
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {
+	
+   
+    /*
+    public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
 					ClientDesign window = new ClientDesign();
-					window.frame.setVisible(true);
+					window.frmSecuruty2016.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
 	}
+    */
 
 	/**
 	 * Create the application.
 	 */
 	public ClientDesign() {
+		isConnected = false;
 		initialize();
-		tglbtnNewToggleButton.addActionListener(actionListener);
-		btnSend.addActionListener(actionListener);
-
 	}
 
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(null);
+		frmSecuruty2016 = new JFrame();
+		frmSecuruty2016.setTitle("Securuty 2016 P4 GX");
+		frmSecuruty2016.setBounds(100, 100, 600, 400);
+		frmSecuruty2016.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmSecuruty2016.getContentPane().setLayout(null);
 		
 		btnSend = new JButton("Send");
 		btnSend.setEnabled(false);
-		btnSend.setBounds(370, 185, 80, 29);
-		frame.getContentPane().add(btnSend);
+		btnSend.setBounds(470, 154, 107, 100);
+		btnSend.addActionListener(this);
+		frmSecuruty2016.getContentPane().add(btnSend);
 		
 		usernameTextField = new JTextField();
 		usernameTextField.setForeground(new Color(0, 0, 0));
-		usernameTextField.setBounds(8, 51, 163, 28);
-		frame.getContentPane().add(usernameTextField);
+		usernameTextField.setBounds(8, 51, 240, 30);
+		frmSecuruty2016.getContentPane().add(usernameTextField);
 		usernameTextField.setColumns(10);
 		
-		receiveTextArea = new JTextArea();
-		receiveTextArea.setEnabled(false);
-		receiveTextArea.setEditable(false);
-		receiveTextArea.setBounds(6, 218, 438, 45);
-		frame.getContentPane().add(receiveTextArea);
-		
-		sendTextArea = new JTextArea();
-		sendTextArea.setEnabled(false);
-		sendTextArea.setBounds(6, 140, 438, 45);
-		frame.getContentPane().add(sendTextArea);
-		
 		logTextPane = new JTextPane();
+		logTextPane.setEditable(false);
 		logTextPane.setForeground(Color.BLACK);
 		logTextPane.setBackground(Color.WHITE);
-		logTextPane.setEditable(false);
 		logTextPane.setToolTipText("");
-		logTextPane.setBounds(162, 30, 71, 58);
-		frame.getContentPane().add(logTextPane);
+		logTextPane.setBounds(16, 154, 180, 39);
+		frmSecuruty2016.getContentPane().add(logTextPane);
 		
-		JScrollPane sp = new JScrollPane(logTextPane);
-		sp.setBounds(180,30,250,90);
-		sp.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);;
-		frame.getContentPane().add(sp);
+		JScrollPane logScollPane = new JScrollPane(logTextPane);
+		logScollPane.setBounds(272,30,305,100);
+		logScollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);;
+		frmSecuruty2016.getContentPane().add(logScollPane);
+		
+		sendScrollPane = new JScrollPane((Component) null);
+		sendScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		sendScrollPane.setBounds(26, 154, 420, 100);
+		frmSecuruty2016.getContentPane().add(sendScrollPane);
+		
+		sendTextArea = new JTextPane();
+		sendScrollPane.setViewportView(sendTextArea);
+		
+		receiveScollPane = new JScrollPane((Component) null);
+		receiveScollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		receiveScollPane.setBounds(145, 266, 431, 96);
+		frmSecuruty2016.getContentPane().add(receiveScollPane);
+		
+		receiveTextArea = new JTextPane();
+		receiveScollPane.setViewportView(receiveTextArea);
 		
 		lblLog = new JLabel("Log"); 
-		lblLog.setBounds(191, 15, 61, 16);
-		frame.getContentPane().add(lblLog);
-		
-		JLabel lblReceive = new JLabel("Receive");
-		lblReceive.setBounds(6, 202, 61, 16);
-		frame.getContentPane().add(lblReceive);
+		lblLog.setBounds(272, 9, 23, 16);
+		frmSecuruty2016.getContentPane().add(lblLog);
 		
 		JLabel lblName = new JLabel("Username:");
 		lblName.setBounds(10, 37, 71, 16);
-		frame.getContentPane().add(lblName);
+		frmSecuruty2016.getContentPane().add(lblName);
 		
 		separator_1 = new JSeparator();
-		separator_1.setBounds(6, 130, 438, 12);
-		frame.getContentPane().add(separator_1);
+		separator_1.setBounds(6, 130, 571, 12);
+		frmSecuruty2016.getContentPane().add(separator_1);
 		
-		tglbtnNewToggleButton = new JToggleButton("Connect");
-		tglbtnNewToggleButton.setBounds(6, 10, 161, 29);
-		frame.getContentPane().add(tglbtnNewToggleButton);
+		btnConnect = new JButton("Connect");
+		btnConnect.setBounds(6, 10, 161, 29);
+		btnConnect.addActionListener(this);
+		frmSecuruty2016.getContentPane().add(btnConnect);
 		
 		lblSendTo = new JLabel("Destination username:");
 		lblSendTo.setBounds(10, 84, 157, 16);
-		frame.getContentPane().add(lblSendTo);
+		frmSecuruty2016.getContentPane().add(lblSendTo);
 		
 		destinationUsernameTextField = new JTextField();
-		destinationUsernameTextField.setBounds(8, 100, 163, 28);
-		frame.getContentPane().add(destinationUsernameTextField);
+		destinationUsernameTextField.setBounds(8, 100, 240, 30);
+		frmSecuruty2016.getContentPane().add(destinationUsernameTextField);
 		destinationUsernameTextField.setColumns(10);
 		
-		JLabel usernameLabel = new JLabel("");
+		usernameLabel = new JLabel("");
 		usernameLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-		usernameLabel.setBounds(232, 15, 212, 16);
+		usernameLabel.setBounds(365, 9, 212, 16);
 		usernameLabel.setEnabled(false);
-		frame.getContentPane().add(usernameLabel);
+		frmSecuruty2016.getContentPane().add(usernameLabel);
 		
-		actionListener = new ActionListener() {
-			public void actionPerformed(ActionEvent actionEvent) {
-		        AbstractButton abstractButton = (AbstractButton) actionEvent.getSource();
-		        boolean selected = abstractButton.getModel().isSelected();
-		        doc = logTextPane.getStyledDocument();
-		        style = logTextPane.addStyle("Style", null);
-		        if(actionEvent.getSource() == tglbtnNewToggleButton)
-		        {
-			        if(selected)
-			        {
-			        	if(usernameTextField.getText().isEmpty())
-			        	{	
-			        		color = Color.RED;
-			        		logMessage = "Connection failed: source username missing \n";
-			        	}
-			        	else
-			        	{	
-			        		color = Color.GREEN;
-			        		logMessage = "Connection successful \n";
-			        		tglbtnNewToggleButton.setText("Disconnect");
-				        	sendTextArea.setEnabled(true);
-				        	btnSend.setEnabled(true);
-				        	receiveTextArea.setEnabled(true);
-				        	usernameLabel.setEnabled(true);
-				        	usernameLabel.setText(usernameTextField.getText());
-			        	}
-			        }
-			        else
-			        {	
-			            color = Color.GREEN;
-		        		logMessage = "Disconnected \n";
-			        	tglbtnNewToggleButton.setText("Connect");
-			        	sendTextArea.setText("");
-			        	sendTextArea.setEnabled(false);
-			        	btnSend.setEnabled(false);
-			        	receiveTextArea.setEnabled(false);
-			        	usernameLabel.setEnabled(false);
-			        	usernameLabel.setText("");
-			        }   
-		        }
-		        else if(actionEvent.getSource() == btnSend)
-		        {	
-		        	if(destinationUsernameTextField.getText().isEmpty())
-		        	{	
-		        		color = Color.RED;
-		        		logMessage = "Error: destination username missing \n";
-		        	}
-		        	else if(sendTextArea.getText().isEmpty())
-		        	{
-		        		color = Color.RED;
-		        		logMessage = "Error: message box is empty \n";
-		        	}
-		        	else
-		        	{
-		        		color = Color.BLUE;
-		        		logMessage = "Message send \n";
-		        	}
-		        	
-		        }
-		        StyleConstants.setForeground(style,color);
-	            try { doc.insertString(doc.getLength(), logMessage,style);}
-	            catch (BadLocationException e){}
-		   }
-		};
+		btnNButtonEw = new JButton("List clients");
+		btnNButtonEw.setBounds(26, 262, 99, 100);
+		frmSecuruty2016.getContentPane().add(btnNButtonEw);
+	}
+	
+	public void actionPerformed(ActionEvent actionEvent) {
+        doc = logTextPane.getStyledDocument();
+        style = logTextPane.addStyle("Style", null);
+        if(actionEvent.getSource() == btnConnect)
+        {
+	        if(!isConnected)
+	        {
+	        	if(usernameTextField.getText().isEmpty())
+	        	{	
+	        		color = Color.RED;
+	        		logMessage = "Connection failed: source username missing \n";
+	        	}
+	        	else
+	        	{	
+	        		isConnected = true;
+	        		usernameTextField.setEnabled(false);
+	        		color = Color.GREEN;
+	        		logMessage = "Connection successful \n";
+	        		btnConnect.setText("Disconnect");
+		        	sendTextArea.setEnabled(true);
+		        	btnSend.setEnabled(true);
+		        	receiveTextArea.setEnabled(true);
+		        	usernameLabel.setEnabled(true);
+		        	usernameLabel.setText(usernameTextField.getText()); 	
+	        	}
+	        }
+	        else
+	        {	
+	        	isConnected = false;
+	        	usernameTextField.setEnabled(true);
+	            color = Color.GREEN;
+        		logMessage = "Disconnected \n";
+	        	btnConnect.setText("Connect");
+	        	sendTextArea.setText("");
+	        	sendTextArea.setEnabled(false);
+	        	btnSend.setEnabled(false);
+	        	receiveTextArea.setEnabled(false);
+	        	usernameLabel.setEnabled(false);
+	        	usernameLabel.setText("");
+	        }   
+        }
+        else if(actionEvent.getSource() == btnSend)
+        {	
+        	if(destinationUsernameTextField.getText().isEmpty())
+        	{	
+        		color = Color.RED;
+        		logMessage = "Error: destination username missing \n";
+        	}
+        	else if(sendTextArea.getText().isEmpty())
+        	{
+        		color = Color.RED;
+        		logMessage = "Error: message box is empty \n";
+        	}
+        	else
+        	{
+        		color = Color.BLUE;
+        		logMessage = "Message send \n";
+        	}
+        	
+        }
+        StyleConstants.setForeground(style,color);
+        try { doc.insertString(doc.getLength(), logMessage,style);}
+        catch (BadLocationException e){}
+   }
+			
+	public boolean isConnected() {
+		return isConnected;
+	}
+	public void setConnected(boolean isConnected) {
+		this.isConnected = isConnected;
+	}
+	public String getUsername() {
+		return usernameTextField.getText();
+	}
+	public String getDestinationUsername() {
+		return destinationUsernameTextField.getText();
+	}
+	public String getSendMessage() {
+		return sendTextArea.getText();
+	}
+	public void setReceiveMessage(String message)
+	{
+		receiveTextArea.setText(receiveTextArea.getText() + "\n" + message);
+	}
+	public void setLogMessage(String message)
+	{
+		style = logTextPane.addStyle("Style", null);
+		StyleConstants.setForeground(style,Color.blue);
+        try { doc.insertString(doc.getLength(), logMessage,style);}
+        catch (BadLocationException e){}
+		//logTextPane.setText(logTextPane.getText() + "\n" + message);
+	}
+	public void setIsConnectedToServer(boolean c)
+	{
+		isConnectedToServer = c;
+	}
+
+
+	@Override
+	public void windowOpened(WindowEvent e) {
+		// TODO Auto-generated method stub
 		
+	}
+
+
+	@Override
+	public void windowClosing(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void windowClosed(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void windowIconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void windowDeiconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void windowActivated(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void windowDeactivated(WindowEvent e) {
+		// TODO Auto-generated method stub
 		
 	}
 }

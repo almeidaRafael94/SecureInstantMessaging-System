@@ -16,7 +16,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class Client
-{
+{	
 	//server connection attributes
 	private String ip;
 	private int port;
@@ -98,13 +98,11 @@ public class Client
                 	//Read Message from the server
 					try
 					{	
-						
 						in = new BufferedReader(new InputStreamReader(is));
 						String inputLine;
 					    while ((inputLine = in.readLine()) != null)
 					        System.out.println("ACK RECEIVED by: " + client_name + " : " + inputLine + "\n");
-						
-					}
+					}	
 					catch(IOException e){}
                 }
             }
@@ -130,7 +128,6 @@ public class Client
 		if(type.equals("connect"))
 		{
 			phase += 1;
-	    	//client_name = "Rafael";
 	    	data = "<JSON or base64 encoded if binary (optional)>";
 	    	
 	    	json.addProperty("type", type);
@@ -224,8 +221,7 @@ public class Client
 	// Set destination id
 	public void setDst(String dst)
 	{
-		this.dst = dst;
-		
+		this.dst = dst;	
 	}
 	
 	//Set source id
