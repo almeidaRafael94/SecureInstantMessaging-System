@@ -13,6 +13,7 @@ public class run {
 	
 	static Client client1;
 	static Client client2;
+	static Client client3;
 	//Design application
 	static ClientDesign clientWindow;
 	
@@ -38,38 +39,52 @@ public class run {
 	        
 	        client1 = new Client("Rafael Almeida");
 	        client2 = new Client("Pedro ferreitra");
+	        client3 =  new Client("Laura");
+	        
 	        client1.start();
 	        //System.out.println("Client connected: " + client1.connected());
 	        client2.start();
 	        //System.out.println("Client connected: " + client2.connected());
-	        client1.send("connect", "");
+	        client3.start();
+	        
+	        client1.send("connect", "", null);
 	        //System.out.println("connect command by client1: done");
-	        client2.send("connect", "");
+	        client2.send("connect", "", null);
 	        //System.out.println("connect command by client2: done");
+	        client3.send("connect", "", null);
+	        
 	       
 	        
-	        //client1.send("secure", "list");
+	        client1.send("secure", "list", null);
 	        //System.out.println("list command by client1: done");
-	        //client2.send("secure", "list");
+	        //client2.send("secure", "list", null);
 	        //System.out.println("list command by client2: done");
 	        
 	        //test connection between 2 clients
-	        client1.setSrc(client1.getNONCE());
-	        client1.setDst(client2.getNONCE());
-	        client2.setSrc(client2.getNONCE());
-	        client2.setDst(client1.getNONCE());
+	        //client1.setSrc(client1.getNONCE());
+	        client1.setDst(client2.getID());
+	        //client2.setSrc(client2.getNONCE());
+	        client2.setDst(client1.getID());
 	        
-	        client1.send("secure", "client-connect");
-	        client2.send("secure", "client-connect");
+	        client3.setDst(client1.getID());
 	        
-	        client1.send("secure", "client-com");
-	        client2.send("secure", "client-com");
+	        client3.send("secure", "client-connect", null);
+	        client2.send("secure", "client-connect", null);
 	        
-	        client1.send("secure", "ack");
-	        client2.send("secure", "ack");
+	        //test function
+	        //client1.showResults();
+	        // client2.showResults();
+	        // client3.showResults();
 	        
-	        client1.send("secure", "client-disconnect");
-	        client2.send("secure", "client-disconnect"); 
+	        
+	        //client1.send("secure", "client-com");
+	        //client2.send("secure", "client-com");
+	        
+	        //client1.send("secure", "ack");
+	        //client2.send("secure", "ack");
+	        
+	        //client1.send("secure", "client-disconnect");
+	        //client2.send("secure", "client-disconnect"); 
 	       	        
 	        
 	        //client1.send("connect");
