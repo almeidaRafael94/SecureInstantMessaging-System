@@ -127,7 +127,14 @@ executeCommand ( JsonObject data )
 		 }
 		 	
 		 if (innerCmd.getAsString().equals( "list" )) {
-		     String list = registry.listClients( null );
+			 //add by me (Rafael Almeida) 
+			 JsonElement elemClientID = payload.get("data");
+			 String clientID = elemClientID.getAsString();
+			 if(clientID.equals("<JSON or base64 encoded if binary (optional)>"))
+			 {
+				 clientID = null; 
+			 }
+		     String list = registry.listClients(clientID);
 		     String response;
 	
 		     if (list == null) {
