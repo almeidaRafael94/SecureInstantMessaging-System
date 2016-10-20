@@ -3,49 +3,50 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 public class Client
 {	
-	int cnt;
+	//Cryptation functions
+	Encryptation encryptClass;
 	
-	//Map to save <client_id, client_symmetricKey_String>
-	Map<String ,Map<String, String>> mapID_KEYS;
-	Map<String, String> IDInfo;
+	// Key pair of this client
+	private static KeyPair keyPair;
 	
+	// Map with secret key by client_id
+	private static Map<String, SecretKey> secret;
+	
+	
+	//Save client information by client id
+	private static Map<String ,Map<String, String>> mapID_KEYS;
+	
+	//Save clientDataName, publicKey, symmetricKey
+	private static Map<String, String> IDInfo;
+	
+
 	/*Map to save the state of this client in the world by id
 	CONNECT 				- connect with the server
 	ACK_CONNECT			- ack of connection with the server
@@ -59,21 +60,11 @@ public class Client
 	ACK_CL_DISCONNECT	- ack disconnect to the server
 	CL_ACK				- ack for other client
 	ACK_CL_ACK
-	*/
 	LinkedList<String> state;
 	Map<String, LinkedList<String>> clientState;
 	
-	
-	//encryptation/decryptation keys
-	private static KeyPair keyPair;
-	private static SecretKey symmetricKey;
-	static byte[] keyData;
-	static SecretKeySpec sks;
-	static Cipher cipher;
-	static int size;
-	private static Cipher ecipher;
-	private static Cipher dcipher;
-	
+	*/
+		
 	//server connection attributes
 	private String ip;
 	private int port;
@@ -81,43 +72,35 @@ public class Client
 	//Client Thread
     private Thread thread;
     
-    //IO
+    //Input/Output
     private DataInputStream is;
     private DataOutputStream os;
     private BufferedReader in;
     
+    //Socket to transmit messages
     private Socket socket;
 	
-	JsonElement description; // JSON description of the client, including id
-	OutputStream out;	 // Stream to send messages to the client
+    //Client attributes
+	private String id;
 	
-	private String id;		 // id extracted from the JASON description
-	String name;
-	int level;
-	String sa_data;
+	//Information of the messages
+	private JsonObject json;
+	private String type;
+	private int phase;
+	private String client_name;
+	private String ciphers;
+	private String data;
+	private JsonObject payload;
+	//private String src;
+	private String dst;
 	
-	/* Information of the messages
-	 * 
-	 */
-	JsonObject json;
-	
-	String type;
-	int phase;
-	String client_name;
-	String message_id;
-	String ciphers;
-	String data;
-	JsonObject payload;
-	String src;
-	String dst;
-	
-	public Client(String userName)
+	public Client(String userName) throws NoSuchAlgorithmException, IOException
 	{	
-		cnt = 0;
+		encryptClass = new Encryptation();
+		keyPair = encryptClass.generateAsymmetricKey(1024);
+		secret =  new HashMap<String, SecretKey>();
 		
 		mapID_KEYS = new HashMap<String, Map<String, String>>();
-		state = new LinkedList<String>();
-		clientState = new HashMap<String, LinkedList<String>>();
 		
 		//remove this
 		client_name = userName;
@@ -165,11 +148,10 @@ public class Client
 						String inputLine;
 					    while ((inputLine = in.readLine()) != null)
 					    {
-					        //System.out.println("ACK RECEIVED by: " + client_name + " : " + inputLine + "\n");
 					        analyzeACK(inputLine);
 					    }
 					}	
-					catch(IOException | JSONException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e){}
+					catch(IOException | JSONException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e){}
                 }
             }
 	    }).start();
@@ -185,17 +167,14 @@ public class Client
 	}
 	
 	// Send message to server 
-	public void send(String type, String payloadType, String listID) throws IOException, JSONException, NoSuchAlgorithmException, InvalidKeySpecException
+	public void send(String type, String payloadType, String listID) throws IOException, JSONException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{   	
 		this.type = type;
 		json = new JsonObject();
 		json.addProperty("type", type);
-		String macro = null;
-		String macroID = dst;	
 		
 		if(type.equals("connect"))
 		{
-			generateAsymmetricKey(1024);
 			phase += 1;
 	    	ciphers = Base64.encode(keyPair.getPublic().getEncoded());
 	    	json.addProperty("type", type);
@@ -205,14 +184,11 @@ public class Client
 	        json.addProperty("ciphers",ciphers);
 	        json.addProperty("data", data);
 	        
-	        macroID = "0";
-	        macro = "CONNECT";
 		}
 		else if(type.equals("secure"))
 		{
 			ciphers = " ";
 			payload = new JsonObject();
-			sa_data = "";
 			payload.addProperty("type", payloadType);
 			json.addProperty("sa_data", data);
 			
@@ -223,12 +199,22 @@ public class Client
 						payload.addProperty("data", data);
 					else
 						payload.addProperty("data", listID);
-					macroID = "0";
-					macro = "LIST";
 					break;
 				case "client-connect":
 					phase += 1;
-					ciphers = generateSymmetricKey(this.id).toString();
+					//showResults();
+					SecretKey sk = Encryptation.generateAESKey();
+					secret.put(dst, sk);
+					System.out.print(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
+					String KEYencrypted = "";
+					showResults();
+					if(mapID_KEYS.containsKey(dst))
+					{	
+						System.out.println(mapID_KEYS.get(dst).get("publicKey"));
+						KEYencrypted = Encryptation.encrypt(Encryptation.convertAESkeyToString(sk), mapID_KEYS.get(dst).get("publicKey"));
+						System.out.println(client_name + " Encryptation of symetric key sucessfull");
+					}
+					ciphers = KEYencrypted;
 					data = "Client1 to Client 2: hi :)";
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
@@ -236,40 +222,39 @@ public class Client
 					payload.addProperty("ciphers", ciphers);
 					payload.addProperty("data", data);
 					
-					macro = "CL_CONNECT";
 					break;
+				case "client-com":
+					data = "";
+					if(secret.containsKey(dst))
+					{	
+						System.out.println(client_name + "-------->" + dst);
+						if(secret.get(dst) != null)
+							data = Encryptation.encryptAES("Hello, Im client 2 and you are client 1!!", secret.get(dst));			  
+					}
+					payload.addProperty("src", this.id);
+					payload.addProperty("dst", dst);
+					payload.addProperty("data", data);
+					
+					break;	
 				case "client-disconnect":
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
-					payload.addProperty("src", data);
+					payload.addProperty("data", data);
 					
-					macro = "CL_DISCONNECT";
-					break;
-				case "client-com":
-					payload.addProperty("src", this.id);
-					payload.addProperty("dst", dst);
-					payload.addProperty("src", data);
-					
-					macro = "CL_COM";
 					break;
 				case "ack":
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
 					payload.addProperty("data", data);
 					
-					macro = "CL_ACK";
 					break;
 			}
 			json.add("payload", payload);
 		}
 		else
 		{
-			macro = null;
 			System.err.println("Invalid command type");
 		}
-		
-		//update state
-		updateState(macroID,macro);
 		
 		System.out.println("JSON send by: " + client_name + " : " + json.toString());
 	    os.write(json.toString().getBytes( StandardCharsets.UTF_8 ));
@@ -298,22 +283,10 @@ public class Client
 		return new BigInteger(130, random).toString(32);
 	}
 	
-	//Get client identification number
-	public String getNONCE()
-	{
-		return id;
-	}
-	
 	// Set destination id
 	public void setDst(String dst)
 	{
 		this.dst = dst;	
-	}
-	
-	//Set source id
-	public void setSrc(String src)
-	{
-		this.src = src;
 	}
 	
 	public String getID()
@@ -321,9 +294,9 @@ public class Client
 		return this.id;
 	}
 	
-	public void analyzeACK(String msg) throws JSONException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
+	public void analyzeACK(String msg) throws JSONException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException
 	{	
-		System.out.println("RESPONSE: " + msg);
+		System.out.println(client_name + " RESPONSE: " + msg);
 		JSONObject messageReceivedJSON = new JSONObject(msg);
 		String messageReceivedType = messageReceivedJSON.getString("type");
 		JSONObject messageReceivedPayload;
@@ -357,7 +330,7 @@ public class Client
 						clientDataId = clientData.getString("id");
 						clientDataName = clientData.getString("name");
 						clientDataPublicKey = clientData.getString("ciphers");
-
+						
 						if(!this.id.equals(clientDataId))
 						{
 							IDInfo = new HashMap<String,String>();
@@ -374,127 +347,52 @@ public class Client
 					otherClientSymmetricKey = messageReceivedPayload.getString("ciphers");
 					otherClientSymmetricKeySrc = messageReceivedPayload.getString("src");
 					//System.out.println("SRC ID: "  +otherClientSymmetricKeySrc + " SK-> " + otherClientSymmetricKey);
-
+					SecretKey sk = Encryptation.decrypt(otherClientSymmetricKey, keyPair.getPrivate());
+					String secureKeyStr = Encryptation.convertAESkeyToString(sk);
+					System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc +" and save it");
+					
 					IDInfo = new HashMap<String,String>();
 					IDInfo = mapID_KEYS.get(otherClientSymmetricKeySrc);
-					IDInfo.put("symmetricKey",otherClientSymmetricKey);
+					IDInfo.put("symmetricKey",secureKeyStr);
 					mapID_KEYS.put(otherClientSymmetricKeySrc,IDInfo);
 					
+					secret.put(dst, sk);
 					//System.out.println(CipheringSymmetricKey(keyPair,otherClientSymmetricKey));
-					//showResults();
+					showResults();
 					break;
 				case "client-disconnect":
 					break;
 				case "client-com":
+					String srcIdClient = messageReceivedPayload.getString("src");
+					String clearText = messageReceivedPayload.getString("data");
+
+					if(!clearText.equals(""))
+					{
+						if(secret.containsKey(srcIdClient))
+						{
+							if(secret.get(srcIdClient) != null)
+							{
+								clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
+							}		
+						}
+					}
+					
+					System.out.println(client_name + " Clear text: " + clearText);
+					
 					break;
 				case "ack":
 					break;
 			}
 		}
-		
-		
-	}
-	
-
-	public void updateState(String macroID, String macro)
-	{
-		if(macro != null && macroID != null)
-		{
-			if(clientState.containsKey(macroID))
-			{
-				state = clientState.get(macroID);
-				state.add(macro);
-				clientState.put(macroID ,state);
-			}
-			else
-			{
-				state.add(macro);
-				clientState.put(macroID, state);
-			}
-		}
-	}
-	
-	//Generate asymetric keypair
-	public static void generateAsymmetricKey(int keySize) throws NoSuchAlgorithmException, IOException
-	{
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-		kpg.initialize(keySize);
-		KeyPair KPair = kpg.generateKeyPair();
-		keyPair = KPair;
-	}
-	
-	//Generate symetric key by client id
-	public static SecretKey generateSymmetricKey(String id) throws NoSuchAlgorithmException, InvalidKeySpecException
-	{
-		keyData = id.getBytes();
-		sks = new SecretKeySpec(keyData, "DES");
-		SecretKeyFactory kf = SecretKeyFactory.getInstance("DES");
-		SecretKey secretKey = kf.generateSecret(sks);
-		return secretKey;
-	}
-	
-	// Cyphering simetric key with asymetric public key
-	public static String CipheringSymmetricKey(KeyPair keyPair, String asymetricKeyToEncrypt) throws NoSuchAlgorithmException, NoSuchPaddingException, UnsupportedEncodingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException
-	{	    
-        byte[] public_key = keyPair.getPublic().getEncoded();
-        byte[] text = asymetricKeyToEncrypt.getBytes();
-        
-        X509EncodedKeySpec spec =
-                new X509EncodedKeySpec(public_key);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        
-        cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.ENCRYPT_MODE, kf.generatePublic(spec));
-        byte[] cipherText;
-		cipherText = cipher.doFinal(text);
-		
-		return new String(cipherText, "UTF8");
-	}
-	
-	// Decyphering simetric key with asymetric private key
-	public static String DecipheringSymmetricKey(KeyPair keyPair, String asymetricKeyToDecrypt) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException
-	{
-        byte[] private_key = keyPair.getPrivate().getEncoded();
-        byte[] cypheringText = asymetricKeyToDecrypt.getBytes();
-        
-        PKCS8EncodedKeySpec spec =
-                new PKCS8EncodedKeySpec(private_key);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-
-        Cipher dcipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.DECRYPT_MODE, kf.generatePrivate(spec));
-        byte[] decipheredText;
-        decipheredText = cipher.doFinal(cypheringText);
-      
-        return new String(decipheredText, "UTF8");
-	}
-	
-	// Cyphering text with symetric key
-	public static String Ciphering(SecretKey secretKey, String textToCypher) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException
-	{
-		ecipher = Cipher.getInstance("DES");
-		ecipher.init(Cipher.ENCRYPT_MODE, secretKey);
-		byte[] utf8 = textToCypher.getBytes("UTF8");
-		byte[] enc = ecipher.doFinal(utf8);
-		//return new sun.misc.BASE64Encoder().encode(enc);
-		
-		return new String(enc, "UTF8");
-	}
-	
-	// Decyphering text with symetric key
-	public static String Decyphering(SecretKey secretKey, String cypheredText) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException
-	{
-		dcipher = Cipher.getInstance("DES");
-		dcipher.init(Cipher.DECRYPT_MODE, secretKey);
-		byte[] dec = new sun.misc.BASE64Decoder().decodeBuffer(cypheredText);
-		byte[] utf8 = dcipher.doFinal(dec);
-		
-		return new String(utf8, "UTF8");
 	}
 	
 	public void showResults()
 	{
-		System.out.println("SHOW RESULTS -> \n" + mapID_KEYS.toString() + "\nEND SHOW RESULTS\n");
+		System.out.println("SHOW RESULTS OF : " + client_name + " with id: " + this.id + " -> \n" + mapID_KEYS.toString() + "\nEND SHOW RESULTS\n");
 		//System.out.println(clientState. + "\n");
+	}
+	public void showSecretKeyStore()
+	{
+		System.out.println(client_name + " Secret key list by id " + secret.toString());
 	}
 }

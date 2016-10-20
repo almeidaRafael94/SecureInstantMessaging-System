@@ -39,19 +39,21 @@ public class run {
 	        
 	        client1 = new Client("Rafael Almeida");
 	        client2 = new Client("Pedro ferreitra");
-	        client3 =  new Client("Laura");
+	        //client3 =  new Client("Laura");
 	        
 	        client1.start();
-	        //System.out.println("Client connected: " + client1.connected());
+	        System.out.println("Client1 is Rafael Almeida and connected with id:  " +  client1.getID());
 	        client2.start();
-	        //System.out.println("Client connected: " + client2.connected());
-	        client3.start();
+	        System.out.println("Client2 is Pedro ferreitra and connected with id:  " +  client2.getID());
+	        
+	        //client3.start();
+	        //System.out.println("Client3 is Laura and connected with id:  " +  client3.getID());
 	        
 	        client1.send("connect", "", null);
 	        //System.out.println("connect command by client1: done");
 	        client2.send("connect", "", null);
 	        //System.out.println("connect command by client2: done");
-	        client3.send("connect", "", null);
+	        //client3.send("connect", "", null);
 	        
 	       
 	        
@@ -59,16 +61,18 @@ public class run {
 	        //System.out.println("list command by client1: done");
 	        //client2.send("secure", "list", null);
 	        //System.out.println("list command by client2: done");
-	        
+	        //client3.send("secure", "list", null);
+	        client2.send("secure", "list", null);
 	        //test connection between 2 clients
 	        //client1.setSrc(client1.getNONCE());
 	        client1.setDst(client2.getID());
 	        //client2.setSrc(client2.getNONCE());
 	        client2.setDst(client1.getID());
 	        
-	        client3.setDst(client1.getID());
+	        //client3.setDst(client1.getID());
 	        
-	        client3.send("secure", "client-connect", null);
+	        //client3.send("secure", "client-connect", null);
+	        client1.send("secure", "client-connect", null);
 	        client2.send("secure", "client-connect", null);
 	        
 	        //test function
