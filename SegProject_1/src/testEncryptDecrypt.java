@@ -2,12 +2,14 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import javax.crypto.BadPaddingException;
@@ -25,6 +27,7 @@ public class testEncryptDecrypt {
 
 	public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException 
 	{        
+		/*
 		//test RSA single
 		String initial = "RafaelAlmeida";
 		KeyPair asymmetricKey = generateAsymmetricKey(1024);
@@ -55,10 +58,13 @@ public class testEncryptDecrypt {
 	    // Client 2 generate secret key
 	    SecretKey secret = generateAESKey();
 	    
+	    
 	    // Client2 get Clinet1 public key 
 	    // Client2 encrypt secret key with client 1 public key
-	    byte[] secretEncryptedByRSA = encrypt(Base64.getEncoder().encodeToString(secret.getEncoded()), keyRSA.getPublic());
-	    
+	    //byte[] secretEncryptedByRSA = encrypt(Base64.getEncoder().encodeToString(secret.getEncoded()), keyRSA.getPublic());
+	    byte[] secretEncryptedByRSA = encrypt(Base64.getEncoder().encodeToString(secret.getEncoded()), convertStringToPublicKey(convertPublicKeyToString(keyRSA.getPublic())));
+
+        
 	    //Client 2 convert secretEncryptedByRSA in String to send for other client in string format
 	    String secretEncryptedByRSAasStr = new BASE64Encoder().encode(secretEncryptedByRSA);
 	    // Client 2 send secret key encrypted used Client 1 public key to Client 1
@@ -86,7 +92,24 @@ public class testEncryptDecrypt {
         //Conclusion
         if(textToCypher.equals(decypherAEStext))
         	System.out.println("completed flux SUCESSFUL");
-        
+        */
+		
+		KeyPair keyRSA = generateAsymmetricKey(1024);
+	    String textToCypher = "RafaelAlmeida311094";
+	    SecretKey secret = generateAESKey();
+	    
+	    //Client 1
+	    System.out.println("Original Secret key ->" + secret);
+	    String secretCyphered = encrypt(convertAESkeyToString(secret), convertPublicKeyToString(keyRSA.getPublic()));
+	    SecretKey secret2 = decrypt(secretCyphered, keyRSA.getPrivate());
+	    System.out.println("Final Secret key ->" + secret2);
+	    if(secret.equals(secret2))
+	    	 System.out.println("SUCESSFUL TRANSMISSION");
+	    
+	    String textEncrypted = encryptAES(textToCypher,secret2);
+	    String textDecrypted = decryptAES(textEncrypted, secret2);
+	    if(textToCypher.equals(textDecrypted))
+   	 		System.out.println("SUCESSFUL CONVERSION");	    
 	}
 
 		//Generate asymetric keypair
@@ -108,9 +131,11 @@ public class testEncryptDecrypt {
 		}
 		
 
-		public static String decrypt(byte[] text, PrivateKey key) 
+		public static SecretKey decrypt(String text, PrivateKey key) throws IOException 
 		{
+			byte[] textByte = new BASE64Decoder().decodeBuffer(text);
 			byte[] dectyptedText = null;
+			SecretKey originalAESKey = null;
 			try 
 			{
 				// get an RSA cipher object and print the provider
@@ -118,17 +143,20 @@ public class testEncryptDecrypt {
 
 			    // decrypt the text using the private key
 			    cipher.init(Cipher.DECRYPT_MODE, key);
-			    dectyptedText = cipher.doFinal(text);
-			    
+			    dectyptedText = cipher.doFinal(textByte);
+			    byte[] secretKey = Base64.getDecoder().decode(dectyptedText);
+		        originalAESKey = new SecretKeySpec(secretKey, 0, secretKey.length, "AES");
 			    } catch (Exception ex) {
 			      ex.printStackTrace();
 			    }
 
-			    return new String(dectyptedText);
+				return originalAESKey;
 			 }
 		
-		public static byte[] encrypt(String text, PublicKey key) 
+		public static String encrypt(String text, String keyStr) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException 
 		{
+			 PublicKey key = convertStringToPublicKey(keyStr);
+			 String secretEncryptedByRSAasStr;
 			 byte[] cipherText = null;
 			 try 
 			 {
@@ -140,7 +168,8 @@ public class testEncryptDecrypt {
 			 } catch (Exception e) {
 				 e.printStackTrace();
 			 }
-			 return cipherText;
+			 secretEncryptedByRSAasStr = new BASE64Encoder().encode(cipherText);
+			 return secretEncryptedByRSAasStr;
 		}
 		
 		public static String encryptAES(String strDataToEncrypt, SecretKey secretKey) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
@@ -160,4 +189,23 @@ public class testEncryptDecrypt {
 	        String strDecryptedText = new String(byteDecryptedText);
 	        return strDecryptedText;
 		}
+		public static String convertPublicKeyToString(PublicKey pk)
+		{
+			return Base64.getEncoder().encodeToString(pk.getEncoded());
+		}
+		public static PublicKey convertStringToPublicKey(String pkStr) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException
+		{
+			BASE64Decoder decoder = new BASE64Decoder();
+		    byte[] decodedBytes = decoder.decodeBuffer(pkStr);
+	        X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(decodedBytes);
+	        KeyFactory kf = KeyFactory.getInstance("RSA");
+	        PublicKey pk = kf.generatePublic(X509publicKey);
+	        return pk;
+		}
+		public static String convertAESkeyToString(SecretKey secret)
+		{
+			return Base64.getEncoder().encodeToString(secret.getEncoded());
+		}
+		
+		
 }
