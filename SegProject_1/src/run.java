@@ -49,20 +49,20 @@ public class run {
 	        //client3.start();
 	        //System.out.println("Client3 is Laura and connected with id:  " +  client3.getID());
 	        
-	        client1.send("connect", "", null);
+	        client1.send("connect", "", null, null);
 	        //System.out.println("connect command by client1: done");
-	        client2.send("connect", "", null);
+	        client2.send("connect", "", null, null);
 	        //System.out.println("connect command by client2: done");
 	        //client3.send("connect", "", null);
 	        
 	       
 	        
-	        client1.send("secure", "list", null);
+	        client1.send("secure", "list", null, null);
 	        //System.out.println("list command by client1: done");
 	        //client2.send("secure", "list", null);
 	        //System.out.println("list command by client2: done");
 	        //client3.send("secure", "list", null);
-	        client2.send("secure", "list", null);
+	        client2.send("secure", "list", null, null);
 	        //test connection between 2 clients
 	        //client1.setSrc(client1.getNONCE());
 	        client1.setDst(client2.getID());
@@ -72,8 +72,8 @@ public class run {
 	        //client3.setDst(client1.getID());
 	        
 	        //client3.send("secure", "client-connect", null);
-	        client1.send("secure", "client-connect", null);
-	        client2.send("secure", "client-connect", null);
+	        client1.send("secure", "client-connect", null, null);
+	        client2.send("secure", "client-connect", null, null);
 	        
 	        //test function
 	        //client1.showResults();

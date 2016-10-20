@@ -13,13 +13,12 @@ import javax.crypto.NoSuchPaddingException;
 
 import org.json.JSONException;
 
-public class runClient2 {
-
+public class runClient3 {
 	static Socket socket;
 	static String host;
 	static int port;
 	static InetAddress address;
-	static Client client2;
+	static Client Client3;
 	static Scanner sc = new Scanner(System.in);
 	static Scanner sc2 = new Scanner(System.in);
 	
@@ -32,7 +31,7 @@ public class runClient2 {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        client2 = new Client("Bruno Reis");
+	        Client3 = new Client("Francisco Pinto");
 	        
 	        menu();
 			
@@ -72,36 +71,36 @@ public class runClient2 {
 			System.out.print("\n");
 			switch (opcao) {
 			case 1:
-				client2.start();
-		        System.out.println("Client1 is Bruno Reis and connected with id:  " +  client2.getID());
+				Client3.start();
+		        System.out.println("Client3 is Francisco Pinto and connected with id:  " +  Client3.getID());
 				break;
 			case 2:
-				client2.send("connect", "", null, null);
+				Client3.send("connect", "", null, null);
 				break;
 			case 3:
-				client2.send("secure", "list", null, null);
+				Client3.send("secure", "list", null, null);
 				break;
 			case 4:
 				System.out.println("Clinent to connect ID: ");
 				String dst = sc2.nextLine();
-		        client2.setDst(dst);
+		        Client3.setDst(dst);
 				break;
 			case 5:
-				client2.showResults();
+				Client3.showResults();
 				break;
 			case 6:
-				client2.send("secure", "client-connect", null, null);
+				Client3.send("secure", "client-connect", null, null);
 				break;
 			case 7:
 				System.out.println("Insert message to send");
 				String msg = sc2.nextLine();
-				client2.send("secure", "client-com", null, msg);
+				Client3.send("secure", "client-com", null, msg);;
 				break;
 			case 8:
-				client2.showSecretKeyStore();
+				Client3.showSecretKeyStore();
 				break;
 			case 9:
-				client2.disconnect();
+				Client3.disconnect();
 				break;
 			default:
 				System.out.println("Opção Inválida!");
@@ -109,6 +108,5 @@ public class runClient2 {
 			}
 		} while (opcao != 0);
 	}
-	
 	
 }

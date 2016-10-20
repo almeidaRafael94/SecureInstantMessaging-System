@@ -3,7 +3,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -11,10 +10,10 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -151,7 +150,9 @@ public class Client
 					        analyzeACK(inputLine);
 					    }
 					}	
-					catch(IOException | JSONException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e){}
+					catch(IOException | JSONException | NoSuchAlgorithmException | 
+						  InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | 
+						  IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e){}
                 }
             }
 	    }).start();
@@ -167,7 +168,9 @@ public class Client
 	}
 	
 	// Send message to server 
-	public void send(String type, String payloadType, String listID) throws IOException, JSONException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
+	public void send(String type, String payloadType, String listID, String text) 
+			throws IOException, JSONException, NoSuchAlgorithmException, InvalidKeySpecException, 
+			InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{   	
 		this.type = type;
 		json = new JsonObject();
@@ -224,12 +227,16 @@ public class Client
 					
 					break;
 				case "client-com":
-					data = "";
+					if(text != null && !text.equals("") && !text.trim().isEmpty())
+						data = text;
+					else
+						data = "Text example";
+					
 					if(secret.containsKey(dst))
 					{	
 						System.out.println(client_name + "-------->" + dst);
 						if(secret.get(dst) != null)
-							data = Encryptation.encryptAES("Hello, Im client 2 and you are client 1!!", secret.get(dst));			  
+							data = Encryptation.encryptAES(data, secret.get(dst));			  
 					}
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
@@ -260,41 +267,11 @@ public class Client
 	    os.write(json.toString().getBytes( StandardCharsets.UTF_8 ));
 	    os.flush();
 	}
-
-	// client disconnect 
-	public void disconnect()
-    {
-    	try
-    	{
-    		//is.close();
-    		//os.close();
-    	    //in.close();
-    		thread.interrupt();
-	    	socket.shutdownInput();
-	    	socket.shutdownOutput();
-    	}
-    	catch(Exception e){}
-    }
 	
-	//Generate identification number
-	private String generateNONCE()
-	{
-		SecureRandom random = new SecureRandom();
-		return new BigInteger(130, random).toString(32);
-	}
-	
-	// Set destination id
-	public void setDst(String dst)
-	{
-		this.dst = dst;	
-	}
-	
-	public String getID()
-	{
-		return this.id;
-	}
-	
-	public void analyzeACK(String msg) throws JSONException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException
+	public void analyzeACK(String msg)
+			throws JSONException, NoSuchAlgorithmException, IOException, 
+				   InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, 
+				   IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException
 	{	
 		System.out.println(client_name + " RESPONSE: " + msg);
 		JSONObject messageReceivedJSON = new JSONObject(msg);
@@ -352,11 +329,12 @@ public class Client
 					System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc +" and save it");
 					
 					IDInfo = new HashMap<String,String>();
-					IDInfo = mapID_KEYS.get(otherClientSymmetricKeySrc);
+					if(mapID_KEYS.containsKey(otherClientSymmetricKeySrc))
+						IDInfo = mapID_KEYS.get(otherClientSymmetricKeySrc);
 					IDInfo.put("symmetricKey",secureKeyStr);
 					mapID_KEYS.put(otherClientSymmetricKeySrc,IDInfo);
 					
-					secret.put(dst, sk);
+					secret.put(otherClientSymmetricKeySrc, sk);
 					//System.out.println(CipheringSymmetricKey(keyPair,otherClientSymmetricKey));
 					showResults();
 					break;
@@ -371,12 +349,11 @@ public class Client
 						if(secret.containsKey(srcIdClient))
 						{
 							if(secret.get(srcIdClient) != null)
-							{
+							{	
 								clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
 							}		
 						}
 					}
-					
 					System.out.println(client_name + " Clear text: " + clearText);
 					
 					break;
@@ -384,6 +361,40 @@ public class Client
 					break;
 			}
 		}
+	}
+	
+	// client disconnect 
+	public void disconnect()
+    {
+    	try
+    	{
+    		//is.close();
+    		//os.close();
+    	    //in.close();
+    		thread.interrupt();
+	    	socket.shutdownInput();
+	    	socket.shutdownOutput();
+    	}
+    	catch(Exception e){}
+    }
+	
+	//Generate identification number
+	private String generateNONCE()
+	{
+		return UUID.randomUUID().toString();
+		//SecureRandom random = new SecureRandom();
+		//return new BigInteger(130, random).toString(32);
+	}
+	
+	// Set destination id
+	public void setDst(String dst)
+	{
+		this.dst = dst;	
+	}
+	
+	public String getID()
+	{
+		return this.id;
 	}
 	
 	public void showResults()
