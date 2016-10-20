@@ -76,10 +76,10 @@ public class runClient1 {
 		        System.out.println("Client1 is Rafael Almeida and connected with id:  " +  client1.getID());;
 				break;
 			case 2:
-				client1.send("connect", "", null);
+				client1.send("connect", "", null, null);
 				break;
 			case 3:
-				client1.send("secure", "list", null);
+				client1.send("secure", "list", null, null);
 				break;
 			case 4:
 				System.out.println("Clinent to connect ID: ");
@@ -90,10 +90,12 @@ public class runClient1 {
 				client1.showResults();
 				break;
 			case 6:
-				client1.send("secure", "client-connect", null);
+				client1.send("secure", "client-connect", null, null);
 				break;
 			case 7:
-				client1.send("secure", "client-com", null);
+				System.out.println("Insert message to send");
+				String msg = sc2.nextLine();
+				client1.send("secure", "client-com", null, msg);
 				break;
 			case 8:
 				client1.showSecretKeyStore();
