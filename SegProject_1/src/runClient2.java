@@ -87,6 +87,7 @@ public class runClient2 {
 		        client2.setDst(dst);
 				break;
 			case 5:
+				//System.out.println(client2.getClientsList());
 				client2.showResults();
 				break;
 			case 6:

@@ -1,16 +1,26 @@
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -19,31 +29,42 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-public class ClientDesign implements WindowListener,ActionListener  {
+import org.json.JSONException;
+
+public class ClientDesign implements ActionListener  {
 
 	JFrame frmSecuruty2016;
 	private JSeparator separator_1;
-	private JTextField usernameTextField;
 	private JTextPane logTextPane;
 	private JLabel lblLog;
 	private JButton btnConnect;
 
 	private JLabel lblSendTo;
-	private JTextField destinationUsernameTextField;
 	private JButton btnSend;
     private String logMessage = null;
     private Color color = null;
     private StyledDocument doc;
     private Style style;
-    private JButton btnNButtonEw;
+    private JButton btnList;
     private JScrollPane sendScrollPane;
     private JTextPane sendTextArea;
     private JScrollPane receiveScollPane;
     private JTextPane receiveTextArea;
     private JLabel usernameLabel;
+    private JButton btnStart;
+    private JComboBox comboBoxUsernames;
     
+    private boolean isStarted = false;
     private boolean isConnected = false;
     private boolean isConnectedToServer = false;
+    private boolean isClient_connect = false;
+    private boolean isClient_comm = false;
+    
+    
+    private String username;
+    private String port;
+    private String host;
+    private Client client;
 
 	/**
 	 * Launch the application.
@@ -55,7 +76,7 @@ public class ClientDesign implements WindowListener,ActionListener  {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ClientDesign window = new ClientDesign();
+					ClientDesign window = new ClientDesign("TESTE","HOST","1");
 					window.frmSecuruty2016.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -67,9 +88,16 @@ public class ClientDesign implements WindowListener,ActionListener  {
 
 	/**
 	 * Create the application.
+	 * @throws IOException 
+	 * @throws NoSuchAlgorithmException 
 	 */
-	public ClientDesign() {
+	public ClientDesign(String username, String host, String port) throws NoSuchAlgorithmException, IOException {
+		this.username = username;
+		this.host = host;
+		this.port = port;
 		isConnected = false;
+		client = new Client(username);
+		//client.config(host, Integer.parseInt(port));
 		initialize();
 	}
 
@@ -78,29 +106,23 @@ public class ClientDesign implements WindowListener,ActionListener  {
 	 */
 	private void initialize() {
 		frmSecuruty2016 = new JFrame();
-		frmSecuruty2016.setTitle("Securuty 2016 P4 GX");
+		frmSecuruty2016.setTitle("Security 2016 P4 68486   Username: " + username);
 		frmSecuruty2016.setBounds(100, 100, 600, 400);
 		frmSecuruty2016.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmSecuruty2016.getContentPane().setLayout(null);
 		
 		btnSend = new JButton("Send");
 		btnSend.setEnabled(false);
-		btnSend.setBounds(470, 154, 107, 100);
+		btnSend.setBounds(475, 154, 100, 100);
 		btnSend.addActionListener(this);
 		frmSecuruty2016.getContentPane().add(btnSend);
-		
-		usernameTextField = new JTextField();
-		usernameTextField.setForeground(new Color(0, 0, 0));
-		usernameTextField.setBounds(8, 51, 240, 30);
-		frmSecuruty2016.getContentPane().add(usernameTextField);
-		usernameTextField.setColumns(10);
 		
 		logTextPane = new JTextPane();
 		logTextPane.setEditable(false);
 		logTextPane.setForeground(Color.BLACK);
 		logTextPane.setBackground(Color.WHITE);
 		logTextPane.setToolTipText("");
-		logTextPane.setBounds(16, 154, 180, 39);
+		logTextPane.setBounds(2, 2, 99, 16);
 		frmSecuruty2016.getContentPane().add(logTextPane);
 		
 		JScrollPane logScollPane = new JScrollPane(logTextPane);
@@ -110,7 +132,7 @@ public class ClientDesign implements WindowListener,ActionListener  {
 		
 		sendScrollPane = new JScrollPane((Component) null);
 		sendScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		sendScrollPane.setBounds(26, 154, 420, 100);
+		sendScrollPane.setBounds(20, 154, 425, 100);
 		frmSecuruty2016.getContentPane().add(sendScrollPane);
 		
 		sendTextArea = new JTextPane();
@@ -118,7 +140,7 @@ public class ClientDesign implements WindowListener,ActionListener  {
 		
 		receiveScollPane = new JScrollPane((Component) null);
 		receiveScollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		receiveScollPane.setBounds(145, 266, 431, 96);
+		receiveScollPane.setBounds(145, 266, 425, 96);
 		frmSecuruty2016.getContentPane().add(receiveScollPane);
 		
 		receiveTextArea = new JTextPane();
@@ -128,37 +150,41 @@ public class ClientDesign implements WindowListener,ActionListener  {
 		lblLog.setBounds(272, 9, 23, 16);
 		frmSecuruty2016.getContentPane().add(lblLog);
 		
-		JLabel lblName = new JLabel("Username:");
-		lblName.setBounds(10, 37, 71, 16);
-		frmSecuruty2016.getContentPane().add(lblName);
-		
 		separator_1 = new JSeparator();
 		separator_1.setBounds(6, 130, 571, 12);
 		frmSecuruty2016.getContentPane().add(separator_1);
 		
 		btnConnect = new JButton("Connect");
-		btnConnect.setBounds(6, 10, 161, 29);
+		btnConnect.setBounds(10, 45, 161, 29);
 		btnConnect.addActionListener(this);
 		frmSecuruty2016.getContentPane().add(btnConnect);
 		
 		lblSendTo = new JLabel("Destination username:");
-		lblSendTo.setBounds(10, 84, 157, 16);
+		lblSendTo.setBounds(16, 88, 157, 16);
 		frmSecuruty2016.getContentPane().add(lblSendTo);
-		
-		destinationUsernameTextField = new JTextField();
-		destinationUsernameTextField.setBounds(8, 100, 240, 30);
-		frmSecuruty2016.getContentPane().add(destinationUsernameTextField);
-		destinationUsernameTextField.setColumns(10);
 		
 		usernameLabel = new JLabel("");
 		usernameLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		usernameLabel.setBounds(365, 9, 212, 16);
-		usernameLabel.setEnabled(false);
+		usernameLabel.setEnabled(true);
+        usernameLabel.setText(username); 
 		frmSecuruty2016.getContentPane().add(usernameLabel);
 		
-		btnNButtonEw = new JButton("List clients");
-		btnNButtonEw.setBounds(26, 262, 99, 100);
-		frmSecuruty2016.getContentPane().add(btnNButtonEw);
+		btnList = new JButton("List clients");
+		btnList.setBounds(20, 266, 100, 100);
+		btnList.addActionListener(this);
+		frmSecuruty2016.getContentPane().add(btnList);
+		
+		btnStart = new JButton("Start");
+		btnStart.setBounds(8, 12, 161, 29);
+		btnStart.addActionListener(this);
+		frmSecuruty2016.getContentPane().add(btnStart);
+		
+		comboBoxUsernames = new JComboBox();
+		comboBoxUsernames.setBounds(10, 103, 232, 27);
+		comboBoxUsernames.addActionListener(this);
+		frmSecuruty2016.getContentPane().add(comboBoxUsernames);
+		
 	}
 	
 	public void actionPerformed(ActionEvent actionEvent) {
@@ -166,31 +192,33 @@ public class ClientDesign implements WindowListener,ActionListener  {
         style = logTextPane.addStyle("Style", null);
         if(actionEvent.getSource() == btnConnect)
         {
-	        if(!isConnected)
+	        if(!isConnected && isStarted)
 	        {
-	        	if(usernameTextField.getText().isEmpty())
-	        	{	
-	        		color = Color.RED;
-	        		logMessage = "Connection failed: source username missing \n";
-	        	}
-	        	else
-	        	{	
-	        		isConnected = true;
-	        		usernameTextField.setEnabled(false);
-	        		color = Color.GREEN;
-	        		logMessage = "Connection successful \n";
-	        		btnConnect.setText("Disconnect");
-		        	sendTextArea.setEnabled(true);
-		        	btnSend.setEnabled(true);
-		        	receiveTextArea.setEnabled(true);
-		        	usernameLabel.setEnabled(true);
-		        	usernameLabel.setText(usernameTextField.getText()); 	
-	        	}
+	        	comboBoxUsernames.removeAll();
+	        	sendTextArea.removeAll();
+	        	logTextPane.setText("");
+	        	sendTextArea.removeAll();
+	        	
+	        	
+	        	isConnected = true;
+	        	color = Color.GREEN;
+	        	logMessage = "Connection successful \n";
+	        	btnConnect.setText("Disconnect");
+		        sendTextArea.setEnabled(true);
+		        btnSend.setEnabled(true);
+		        receiveTextArea.setEnabled(true);	
+		        try {
+					client.send("connect", "", null, null);
+				} catch (InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+						| NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | IOException
+						| JSONException e) {
+					e.printStackTrace();
+				}
 	        }
 	        else
 	        {	
 	        	isConnected = false;
-	        	usernameTextField.setEnabled(true);
+	        	client.disconnect();
 	            color = Color.GREEN;
         		logMessage = "Disconnected \n";
 	        	btnConnect.setText("Connect");
@@ -200,110 +228,91 @@ public class ClientDesign implements WindowListener,ActionListener  {
 	        	receiveTextArea.setEnabled(false);
 	        	usernameLabel.setEnabled(false);
 	        	usernameLabel.setText("");
+	        	
 	        }   
         }
         else if(actionEvent.getSource() == btnSend)
         {	
-        	if(destinationUsernameTextField.getText().isEmpty())
+        	if(comboBoxUsernames.getSelectedItem().toString().isEmpty())
         	{	
-        		color = Color.RED;
-        		logMessage = "Error: destination username missing \n";
+        		JOptionPane.showMessageDialog(null, "Error: destination username not found \n Press the button List Clients to see the clients avaiable ");
         	}
         	else if(sendTextArea.getText().isEmpty())
         	{
-        		color = Color.RED;
-        		logMessage = "Error: message box is empty \n";
+        		JOptionPane.showMessageDialog(null, "Error: message to send is empty ");
         	}
         	else
         	{
-        		color = Color.BLUE;
-        		logMessage = "Message send \n";
+        		List<String> clients = client.getClientsList();
+        		String id = null;
+        		for (String c : clients)
+        		{
+        			
+        			if(c.split(",")[1].split(":")[1].trim().equals(comboBoxUsernames.getSelectedItem().toString()) )
+        				id = c.split(",")[0].split(":")[1].trim();
+        		}
+        		if(id == null)
+        			JOptionPane.showMessageDialog(null, "Error: destination username does not exists ");
+        		else
+        		{
+        			color = Color.BLUE;
+	        		logMessage = "Client " + username + "send message to" + comboBoxUsernames.getSelectedItem().toString() + "\n";
+	        		client.setDst(id);
+	        		try {
+						client.send("secure", "client-connect", null, null);
+						client.send("secure", "client-com", null, sendTextArea.getText());
+					} catch (InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+							| NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | IOException
+							| JSONException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+	        		
+        		}
         	}
         	
+        }
+        else if(actionEvent.getSource() == btnStart)
+        {
+        	if(!isStarted)
+        	{
+        		isStarted = true;
+        		color = Color.GREEN;
+        		logMessage = username + " begins session \n";
+        		try {
+					client.start();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
+        }
+        else if(actionEvent.getSource() == btnList)
+        {
+        	if(isConnected)
+        	{
+        		try {
+					client.send("secure", "list", null, null);
+				} catch (InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+						| NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | IOException
+						| JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        		
+        		List<String> clients = client.getClientsList();
+        		logMessage = "" +clients.size();
+        		comboBoxUsernames.removeAllItems();
+        		receiveTextArea.removeAll();
+        		for(String client : clients)
+        		{
+        			comboBoxUsernames.addItem(client.split(",")[1].split(":")[1].trim());
+        			receiveTextArea.setText(receiveTextArea.getText() + client + "\n");
+        		}
+        	}
         }
         StyleConstants.setForeground(style,color);
         try { doc.insertString(doc.getLength(), logMessage,style);}
         catch (BadLocationException e){}
    }
-			
-	public boolean isConnected() {
-		return isConnected;
-	}
-	public void setConnected(boolean isConnected) {
-		this.isConnected = isConnected;
-	}
-	public String getUsername() {
-		return usernameTextField.getText();
-	}
-	public String getDestinationUsername() {
-		return destinationUsernameTextField.getText();
-	}
-	public String getSendMessage() {
-		return sendTextArea.getText();
-	}
-	public void setReceiveMessage(String message)
-	{
-		receiveTextArea.setText(receiveTextArea.getText() + "\n" + message);
-	}
-	public void setLogMessage(String message)
-	{
-		style = logTextPane.addStyle("Style", null);
-		StyleConstants.setForeground(style,Color.blue);
-        try { doc.insertString(doc.getLength(), logMessage,style);}
-        catch (BadLocationException e){}
-		//logTextPane.setText(logTextPane.getText() + "\n" + message);
-	}
-	public void setIsConnectedToServer(boolean c)
-	{
-		isConnectedToServer = c;
-	}
-
-
-	@Override
-	public void windowOpened(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowClosing(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowClosed(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowIconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowDeiconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowActivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void windowDeactivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	
 }
