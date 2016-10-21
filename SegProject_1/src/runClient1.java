@@ -73,7 +73,7 @@ public class runClient1 {
 			switch (opcao) {
 			case 1:
 				client1.start();
-		        System.out.println("Client1 is Rafael Almeida and connected with id:  " +  client1.getID());;
+		        System.out.println("Client1 is Rafael Almeida and connected with id:  " +  client1.getID());
 				break;
 			case 2:
 				client1.send("connect", "", null, null);
@@ -87,6 +87,7 @@ public class runClient1 {
 		        client1.setDst(dst);
 				break;
 			case 5:
+				//System.out.println(client1.getClientsList());
 				client1.showResults();
 				break;
 			case 6:

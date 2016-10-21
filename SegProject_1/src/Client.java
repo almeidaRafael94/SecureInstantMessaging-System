@@ -11,8 +11,11 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.crypto.BadPaddingException;
@@ -44,25 +47,6 @@ public class Client
 	
 	//Save clientDataName, publicKey, symmetricKey
 	private static Map<String, String> IDInfo;
-	
-
-	/*Map to save the state of this client in the world by id
-	CONNECT 				- connect with the server
-	ACK_CONNECT			- ack of connection with the server
-	CL_CONNECT			- connect with other client
-	ACK_CL_CONNECT   	- ack of connection with the other client
-	CL_COM				- communication with other client
-	ACK_CL_COM			- ack communication with other client
-	LIST				- request list to the server
-	ACK_LIST			- ack of request list
-	CL_DISCONNECT		- disconnect to the server
-	ACK_CL_DISCONNECT	- ack disconnect to the server
-	CL_ACK				- ack for other client
-	ACK_CL_ACK
-	LinkedList<String> state;
-	Map<String, LinkedList<String>> clientState;
-	
-	*/
 		
 	//server connection attributes
 	private String ip;
@@ -90,7 +74,6 @@ public class Client
 	private String ciphers;
 	private String data;
 	private JsonObject payload;
-	//private String src;
 	private String dst;
 	
 	public Client(String userName) throws NoSuchAlgorithmException, IOException
@@ -103,8 +86,11 @@ public class Client
 		
 		//remove this
 		client_name = userName;
+		
+		// socket default configuration
 		ip = "127.0.0.1";
 		port = 9090; 
+		
 		this.phase = 0;
 		this.ciphers = "RSA";
 		this.id = generateNONCE();
@@ -125,46 +111,42 @@ public class Client
     //Connects to the server and creates a thread to process requests
 	public void start() throws UnknownHostException, IOException
 	{
-	try {
-		socket = new Socket(ip, port); 	
-        is = new DataInputStream(socket.getInputStream());
-	    os = new DataOutputStream(socket.getOutputStream());
+		try 
+		{
+			socket = new Socket(ip, port); 	
+	        is = new DataInputStream(socket.getInputStream());
+		    os = new DataOutputStream(socket.getOutputStream());
     
-      //Create new Thread to handle message receiving
+		    //Create new Thread to handle message receiving
 	  
-        //thread = new Thread()
-	    new Thread(new Runnable()
-	    {  
-            public void run()
-            {
-                while(true)
-                {	
+		    //thread = new Thread()
+		    new Thread(new Runnable()
+		    {  
+		    	public void run()
+		    	{
+		    		while(true)
+		    		{	
                 	
-                	//Read Message from the server
-					try
-					{	
-						in = new BufferedReader(new InputStreamReader(is));
-						String inputLine;
-					    while ((inputLine = in.readLine()) != null)
-					    {
-					        analyzeACK(inputLine);
-					    }
-					}	
-					catch(IOException | JSONException | NoSuchAlgorithmException | 
-						  InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | 
-						  IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e){}
-                }
-            }
-	    }).start();
-        
-         //Start thread
-         //thread.start();
-        
-	    
+	                	//Read Message from the server
+						try
+						{	
+							in = new BufferedReader(new InputStreamReader(is));
+							String inputLine;
+						    while ((inputLine = in.readLine()) != null)
+						    {
+						        analyzeACK(inputLine);
+						    }
+						}	
+						catch(IOException | JSONException | NoSuchAlgorithmException | 
+							  InvalidKeySpecException | InvalidKeyException | NoSuchPaddingException | 
+							  IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e){}
+		    		}
+		    	}
+		    }).start();
 	    
 		}catch (IOException ex) {
 	        System.err.println("<-cliente->: " + ex.getMessage());
-	     }
+	    }
 	}
 	
 	// Send message to server 
@@ -205,7 +187,6 @@ public class Client
 					break;
 				case "client-connect":
 					phase += 1;
-					//showResults();
 					SecretKey sk = Encryptation.generateAESKey();
 					secret.put(dst, sk);
 					System.out.print(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
@@ -400,10 +381,23 @@ public class Client
 	public void showResults()
 	{
 		System.out.println("SHOW RESULTS OF : " + client_name + " with id: " + this.id + " -> \n" + mapID_KEYS.toString() + "\nEND SHOW RESULTS\n");
-		//System.out.println(clientState. + "\n");
 	}
 	public void showSecretKeyStore()
 	{
 		System.out.println(client_name + " Secret key list by id " + secret.toString());
+	}
+	public List<String> getClientsList()
+	{
+		List<String> cleints = new ArrayList<String>();
+		Set<String> idKey = mapID_KEYS.keySet();
+		if(!idKey.isEmpty())
+		{
+			for(String id : idKey)
+			{
+				if(!id.equals(this.id))
+					cleints.add("ID: " + id + ", Name: "  + mapID_KEYS.get(id).get("name"));
+			}
+		}
+		return cleints;
 	}
 }
