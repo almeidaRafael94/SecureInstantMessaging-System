@@ -41,6 +41,8 @@ public class Client
 	// Map with secret key by client_id
 	private static Map<String, SecretKey> secret;
 	
+	//Save last message received by each client
+	private static Map<String , String> messages;
 	
 	//Save client information by client id
 	private static Map<String ,Map<String, String>> mapID_KEYS;
@@ -82,6 +84,7 @@ public class Client
 		encryptClass = new Encryptation();
 		keyPair = encryptClass.generateAsymmetricKey(1024);
 		secret =  new HashMap<String, SecretKey>();
+		messages = new HashMap<String,String>();
 		
 		mapID_KEYS = new HashMap<String, Map<String, String>>();
 		
@@ -340,10 +343,12 @@ public class Client
 							if(secret.get(srcIdClient) != null)
 							{	
 								clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
+								if(clearText != null)
+									messages.put(this.client_name, clearText);
 							}		
 						}
 					}
-					System.out.println(client_name + " Clear text: " + clearText);
+					System.out.println(client_name + " Clear text: " + clearText + "Message map: " + messages.toString());
 					
 					break;
 				case "ack":
@@ -402,10 +407,15 @@ public class Client
 		{
 			for(String id : idKey)
 			{
-				if(!id.equals(this.id) && Integer.parseInt(mapID_KEYS.get(id).get("level")) <= Integer.parseInt(this.level) )
-					cleints.add("ID: " + id + ", Name: "  + mapID_KEYS.get(id).get("name"));
+				if(mapID_KEYS.get(id).get("level") != null && mapID_KEYS.get(id).get("level").matches("\\d+"))
+					if(!id.equals(this.id) && Integer.parseInt(mapID_KEYS.get(id).get("level")) <= Integer.parseInt(this.level) )
+						cleints.add("ID: " + id + ", Name: "  + mapID_KEYS.get(id).get("name"));
 			}
 		}
 		return cleints;
+	}
+	public String getLastMessage(String username)
+	{
+		return messages.get(username);
 	}
 }

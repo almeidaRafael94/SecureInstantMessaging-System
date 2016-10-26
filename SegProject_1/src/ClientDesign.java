@@ -1,15 +1,15 @@
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -59,12 +59,14 @@ public class ClientDesign implements ActionListener  {
     private boolean isConnectedToServer = false;
     private boolean isClient_connect = false;
     private boolean isClient_comm = false;
+    private String message;
     
     private String username;
     private String port;
     private String host;
     private String level;
     private Client client;
+    
 
 	/**
 	 * Launch the application.
@@ -168,8 +170,9 @@ public class ClientDesign implements ActionListener  {
 		
 		comboBoxUsernames = new JComboBox();
 		comboBoxUsernames.setBounds(10, 103, 232, 27);
-		comboBoxUsernames.addActionListener(this);
+		comboBoxUsernames.setVisible(true);
 		frmSecuruty2016.getContentPane().add(comboBoxUsernames);
+		
 	}
 	
 	public void actionPerformed(ActionEvent actionEvent) {
@@ -177,6 +180,7 @@ public class ClientDesign implements ActionListener  {
         style = logTextPane.addStyle("Style", null);
         if(actionEvent.getSource() == btnConnect)
         {
+        	logMessage = "";
 	        if(!isConnected && isStarted)
 	        {
 	        	comboBoxUsernames.removeAll();
@@ -200,7 +204,7 @@ public class ClientDesign implements ActionListener  {
 					e.printStackTrace();
 				}
 	        }
-	        else
+	        else if(isConnected && isStarted)
 	        {	
 	        	isConnected = false;
 	        	client.disconnect();
@@ -217,6 +221,7 @@ public class ClientDesign implements ActionListener  {
         }
         else if(actionEvent.getSource() == btnSend)
         {	
+        	logMessage = "";
         	if(comboBoxUsernames.getSelectedItem().toString().isEmpty())
         	{	
         		JOptionPane.showMessageDialog(null, "Error: destination username not found \n Press the button List Clients to see the clients avaiable ");
@@ -256,6 +261,7 @@ public class ClientDesign implements ActionListener  {
         }
         else if(actionEvent.getSource() == btnStart)
         {
+        	logMessage = "";
         	if(!isStarted)
         	{
         		isStarted = true;
@@ -270,6 +276,7 @@ public class ClientDesign implements ActionListener  {
         }
         else if(actionEvent.getSource() == btnList)
         {
+        	logMessage = "";
         	if(isConnected)
         	{
         		try {
@@ -291,8 +298,29 @@ public class ClientDesign implements ActionListener  {
         		}
         	}
         }
+        else
+        	logMessage = "";
+        
+        Runnable WriteRunnable = new Runnable() {
+            public void run() {
+            	String messageTmp = client.getLastMessage(username);
+            	if(isConnected)
+            		if(messageTmp != message && messageTmp!= null && messageTmp!= "" && messageTmp.trim().length() != 0)
+            		{
+            			receiveTextArea.setText(receiveTextArea.getText() + messageTmp + "\n");
+            			message = messageTmp;
+            		}
+            }
+        };
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(WriteRunnable, 0, 2, TimeUnit.SECONDS);
+        	
         StyleConstants.setForeground(style,color);
-        try { doc.insertString(doc.getLength(), logMessage,style);}
+        try { 
+        	if(!logMessage.equals(""))
+        		doc.insertString(doc.getLength(), logMessage,style);}
         catch (BadLocationException e){}
    }
 }
+
