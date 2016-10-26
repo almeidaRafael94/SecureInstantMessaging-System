@@ -32,7 +32,7 @@ public class runClient2 {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        client2 = new Client("Bruno Reis", "2");
+	        client2 = new Client("Bruno Reis", "1");
 	        
 	        menu();
 			
@@ -97,6 +97,7 @@ public class runClient2 {
 				System.out.println("Insert message to send");
 				String msg = sc2.nextLine();
 				client2.send("secure", "client-com", null, msg);
+				client2.send("secure", "client-connect", null, null);
 				break;
 			case 8:
 				client2.showSecretKeyStore();

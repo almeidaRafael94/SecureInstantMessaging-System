@@ -97,6 +97,7 @@ public class runClient1 {
 				System.out.println("Insert message to send");
 				String msg = sc2.nextLine();
 				client1.send("secure", "client-com", null, msg);
+				client1.send("secure", "client-connect", null, null);
 				break;
 			case 8:
 				client1.showSecretKeyStore();
