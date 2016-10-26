@@ -60,43 +60,29 @@ public class ClientDesign implements ActionListener  {
     private boolean isClient_connect = false;
     private boolean isClient_comm = false;
     
-    
     private String username;
     private String port;
     private String host;
+    private String level;
     private Client client;
 
 	/**
 	 * Launch the application.
 	 */
-	
-   
-    /*
-    public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					ClientDesign window = new ClientDesign("TESTE","HOST","1");
-					window.frmSecuruty2016.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-    */
+    
 
 	/**
 	 * Create the application.
 	 * @throws IOException 
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ClientDesign(String username, String host, String port) throws NoSuchAlgorithmException, IOException {
+	public ClientDesign(String username,String level ,String host, String port) throws NoSuchAlgorithmException, IOException {
 		this.username = username;
 		this.host = host;
 		this.port = port;
+		this.level = level;
 		isConnected = false;
-		client = new Client(username);
+		client = new Client(username, level);
 		//client.config(host, Integer.parseInt(port));
 		initialize();
 	}
@@ -108,7 +94,7 @@ public class ClientDesign implements ActionListener  {
 		frmSecuruty2016 = new JFrame();
 		frmSecuruty2016.setTitle("Security 2016 P4 68486   Username: " + username);
 		frmSecuruty2016.setBounds(100, 100, 600, 400);
-		frmSecuruty2016.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmSecuruty2016.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frmSecuruty2016.getContentPane().setLayout(null);
 		
 		btnSend = new JButton("Send");
@@ -167,10 +153,10 @@ public class ClientDesign implements ActionListener  {
 		usernameLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		usernameLabel.setBounds(365, 9, 212, 16);
 		usernameLabel.setEnabled(true);
-        usernameLabel.setText(username); 
+        usernameLabel.setText(username + " 		(" + this.level + ")"); 
 		frmSecuruty2016.getContentPane().add(usernameLabel);
 		
-		btnList = new JButton("List clients");
+		btnList = new JButton("<html>Available<br />  Users </html>");
 		btnList.setBounds(20, 266, 100, 100);
 		btnList.addActionListener(this);
 		frmSecuruty2016.getContentPane().add(btnList);
@@ -184,7 +170,6 @@ public class ClientDesign implements ActionListener  {
 		comboBoxUsernames.setBounds(10, 103, 232, 27);
 		comboBoxUsernames.addActionListener(this);
 		frmSecuruty2016.getContentPane().add(comboBoxUsernames);
-		
 	}
 	
 	public void actionPerformed(ActionEvent actionEvent) {
@@ -228,7 +213,6 @@ public class ClientDesign implements ActionListener  {
 	        	receiveTextArea.setEnabled(false);
 	        	usernameLabel.setEnabled(false);
 	        	usernameLabel.setText("");
-	        	
 	        }   
         }
         else if(actionEvent.getSource() == btnSend)
@@ -267,10 +251,8 @@ public class ClientDesign implements ActionListener  {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-	        		
         		}
         	}
-        	
         }
         else if(actionEvent.getSource() == btnStart)
         {
@@ -300,7 +282,6 @@ public class ClientDesign implements ActionListener  {
 				}
         		
         		List<String> clients = client.getClientsList();
-        		logMessage = "" +clients.size();
         		comboBoxUsernames.removeAllItems();
         		receiveTextArea.removeAll();
         		for(String client : clients)
@@ -314,5 +295,4 @@ public class ClientDesign implements ActionListener  {
         try { doc.insertString(doc.getLength(), logMessage,style);}
         catch (BadLocationException e){}
    }
-	
 }

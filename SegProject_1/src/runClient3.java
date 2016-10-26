@@ -31,7 +31,7 @@ public class runClient3 {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        Client3 = new Client("Francisco Pinto");
+	        Client3 = new Client("Francisco Pinto", "3");
 	        
 	        menu();
 			

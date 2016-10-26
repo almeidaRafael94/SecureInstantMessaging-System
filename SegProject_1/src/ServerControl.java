@@ -28,6 +28,25 @@ getClient ( String id )
     return null;
 }
 
+synchronized String
+getClientLevel (String level)
+{
+	String a = null;
+    for (ClientDescription c: clients) 
+    {
+    	int l = Integer.parseInt(c.description.getAsJsonObject().get("data").getAsString());
+    		if(l <= Integer.parseInt(level))
+    			 if (a == null) {
+    				a = c.description.toString(); 
+    			 }
+    			 else 
+    			 {
+    				 a += "," + c.description; 
+    			 }
+	}
+    return a;
+}
+
 synchronized ClientDescription
 addClient ( String id, JsonElement description, OutputStream out )
 {
@@ -45,21 +64,44 @@ removeClient ( String id )
 }
 
 synchronized String
-listClients ( String id )
+listClients ( String id, String level)
 {
+	if(id.equals("null"))
+		id = null;
+	if(level.equals("null"))
+		level = null;
+	
+	System.out.println("ID: " + id  + " level: " + level);
     if (id == null) {
 	System.out.println( "Looking for all connected clients" );
     }
     else {
 	System.out.println( "Looking for \"" + id + "\"" );
     }
-
-    if (id != null) {
-	JsonElement client = getClient( id );
-	if (client != null) {
-	    return "[" + client + "]";
-	}
-	return null;
+    if (level == null) {
+    System.out.println( "Looking for all level numbers" );
+    }
+    else {
+    System.out.println( "Looking for levels with value less or equal than "  + level);
+    }
+   
+    if (id != null && level == null) 
+    {
+    	JsonElement client = getClient( id );
+			if (client != null) 
+			{
+			    return "[" + client + "]";
+			}
+		return null;
+    }	
+    else if (id == null && level != null)
+    {
+    	String client = getClientLevel( level );
+		if (client != null) 
+		{
+		    return "[" + client + "]";
+		}
+		return null;
     }
     else {
 	String list = null;
