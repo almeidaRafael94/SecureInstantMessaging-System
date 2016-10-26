@@ -32,7 +32,7 @@ public class runClient1 {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        client1 = new Client("Rafael Almeida");
+	        client1 = new Client("Rafael Almeida", "1");
 	        
 	        menu();
 			

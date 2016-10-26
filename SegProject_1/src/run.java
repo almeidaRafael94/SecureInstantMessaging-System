@@ -37,8 +37,8 @@ public class run {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        client1 = new Client("Rafael Almeida");
-	        client2 = new Client("Pedro ferreitra");
+	        client1 = new Client("Rafael Almeida", "1");
+	        client2 = new Client("Pedro ferreitra", null);
 	        //client3 =  new Client("Laura");
 	        
 	        client1.start();
@@ -51,7 +51,7 @@ public class run {
 	        
 	        client1.send("connect", "", null, null);
 	        //System.out.println("connect command by client1: done");
-	        client2.send("connect", "", null, null);
+	        client2.send("connect", "", null, null );
 	        //System.out.println("connect command by client2: done");
 	        //client3.send("connect", "", null);
 	        

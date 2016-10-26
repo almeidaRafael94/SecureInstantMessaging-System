@@ -27,6 +27,7 @@ public class ClientsManager {
 	private ClientDesign client1;
 	private LinkedList<String> usernameInfo;
 	private Map<String,LinkedList<String>> usersnameList;
+	private JTextField textFieldLevel;
 
 	/**
 	 * Launch the application.
@@ -74,6 +75,8 @@ public class ClientsManager {
 					JOptionPane.showMessageDialog(null, "Port value missing or invalid");
 				else if(usersnameList.containsKey(textFieldUserName.getText()))
 					JOptionPane.showMessageDialog(null, "Username unavailable");
+				else if(textFieldLevel.getText().trim().length() == 0 || !textFieldLevel.getText().matches("\\d+"))
+					JOptionPane.showMessageDialog(null, "Level value missing or invalid");
 				else
 				{
 					usernameInfo = new LinkedList<String>();
@@ -81,7 +84,7 @@ public class ClientsManager {
 					usernameInfo.add(textFieldPort.getText());
 					usersnameList.put(textFieldUserName.getText(), usernameInfo);
 					try {
-						client1 = new ClientDesign(textFieldUserName.getText(), textFieldHost.getText(), textFieldPort.getText() );
+						client1 = new ClientDesign(textFieldUserName.getText(),textFieldLevel.getText() ,textFieldHost.getText(), textFieldPort.getText() );
 					} catch (NoSuchAlgorithmException | IOException e1) {
 						e1.printStackTrace();
 					}
@@ -89,10 +92,10 @@ public class ClientsManager {
 				}
 			}
 		});
-		btnAddClient.setBounds(6, 220, 136, 37);
+		btnAddClient.setBounds(6, 230, 136, 30);
 		
 		textFieldUserName = new JTextField();
-		textFieldUserName.setBounds(6, 32, 426, 28);
+		textFieldUserName.setBounds(6, 25, 426, 28);
 		textFieldUserName.setColumns(10);
 		frmSecurityP.getContentPane().setLayout(null);
 		frmSecurityP.getContentPane().add(btnAddClient);
@@ -100,32 +103,32 @@ public class ClientsManager {
 		
 		textFieldHost = new JTextField();
 		textFieldHost.setColumns(10);
-		textFieldHost.setBounds(6, 85, 136, 28);
+		textFieldHost.setBounds(6, 70, 136, 28);
 		frmSecurityP.getContentPane().add(textFieldHost);
 		
 		textFieldPort = new JTextField();
 		textFieldPort.setColumns(10);
-		textFieldPort.setBounds(6, 137, 136, 28);
+		textFieldPort.setBounds(6, 115, 136, 28);
 		frmSecurityP.getContentPane().add(textFieldPort);
 		
 		JLabel lblUsername = new JLabel("Username");
-		lblUsername.setBounds(6, 15, 172, 16);
+		lblUsername.setBounds(12, 12, 172, 16);
 		frmSecurityP.getContentPane().add(lblUsername);
 		
 		JLabel lblHost = new JLabel("Host ");
-		lblHost.setBounds(12, 72, 39, 16);
+		lblHost.setBounds(12, 55, 39, 16);
 		frmSecurityP.getContentPane().add(lblHost);
 		
 		JLabel lblPortNumber = new JLabel("Port number");
-		lblPortNumber.setBounds(12, 125, 91, 16);
+		lblPortNumber.setBounds(12, 100, 91, 16);
 		frmSecurityP.getContentPane().add(lblPortNumber);
 
 		JLabel lblClientsAvaiable = new JLabel("Clients avaiable");
-		lblClientsAvaiable.setBounds(183, 72, 238, 16);
+		lblClientsAvaiable.setBounds(177, 55, 104, 16);
 		frmSecurityP.getContentPane().add(lblClientsAvaiable);
 		
 		JTextArea textAreaList = new JTextArea();
-		textAreaList.setBounds(177, 141, 244, 116);
+		textAreaList.setBounds(177, 115, 244, 142);
 		frmSecurityP.getContentPane().add(textAreaList);
 		
 		JComboBox comboBoxClients = new JComboBox();
@@ -144,7 +147,7 @@ public class ClientsManager {
 		    }
 		});
 
-		comboBoxClients.setBounds(174, 87, 258, 27);
+		comboBoxClients.setBounds(170, 70, 258, 27);
 		frmSecurityP.getContentPane().add(comboBoxClients);
 		
 		JButton btnShowClients = new JButton("Show clients");
@@ -158,8 +161,17 @@ public class ClientsManager {
 				}
 			}
 		});
-		btnShowClients.setBounds(6, 179, 136, 29);
+		btnShowClients.setBounds(6, 198, 136, 30);
 		frmSecurityP.getContentPane().add(btnShowClients);
+		
+		textFieldLevel = new JTextField();
+		textFieldLevel.setBounds(6, 160, 134, 28);
+		frmSecurityP.getContentPane().add(textFieldLevel);
+		textFieldLevel.setColumns(10);
+		
+		JLabel lblLevel = new JLabel("Level");
+		lblLevel.setBounds(12, 145, 61, 16);
+		frmSecurityP.getContentPane().add(lblLevel);
 		
 	}
 }

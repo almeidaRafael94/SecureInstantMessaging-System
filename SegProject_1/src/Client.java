@@ -75,14 +75,20 @@ public class Client
 	private String data;
 	private JsonObject payload;
 	private String dst;
+	private String level;
 	
-	public Client(String userName) throws NoSuchAlgorithmException, IOException
+	public Client(String userName, String level) throws NoSuchAlgorithmException, IOException
 	{	
 		encryptClass = new Encryptation();
 		keyPair = encryptClass.generateAsymmetricKey(1024);
 		secret =  new HashMap<String, SecretKey>();
 		
 		mapID_KEYS = new HashMap<String, Map<String, String>>();
+		
+		if(level != null)
+			this.level = level;
+		else
+			this.level = "0";
 		
 		//remove this
 		client_name = userName;
@@ -105,7 +111,7 @@ public class Client
 	
 	public boolean connected()
     {
-    	return socket!=null && os != null && socket.isConnected();// && !os.checkError();
+    	return socket!=null && os != null && socket.isConnected();
     }
 	
     //Connects to the server and creates a thread to process requests
@@ -150,7 +156,7 @@ public class Client
 	}
 	
 	// Send message to server 
-	public void send(String type, String payloadType, String listID, String text) 
+	public void send(String type, String payloadType, String clientID, String text) 
 			throws IOException, JSONException, NoSuchAlgorithmException, InvalidKeySpecException, 
 			InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{   	
@@ -159,7 +165,7 @@ public class Client
 		json.addProperty("type", type);
 		
 		if(type.equals("connect"))
-		{
+		{	
 			phase += 1;
 	    	ciphers = Base64.encode(keyPair.getPublic().getEncoded());
 	    	json.addProperty("type", type);
@@ -167,7 +173,7 @@ public class Client
 	        json.addProperty("name", client_name);
 	        json.addProperty("id", id);
 	        json.addProperty("ciphers",ciphers);
-	        json.addProperty("data", data);
+	        json.addProperty("data", this.level);
 	        
 		}
 		else if(type.equals("secure"))
@@ -178,12 +184,9 @@ public class Client
 			json.addProperty("sa_data", data);
 			
 			switch(payloadType)
-			{
+			{	
 				case "list":
-					if(listID == null)
-						payload.addProperty("data", data);
-					else
-						payload.addProperty("data", listID);
+					payload.addProperty("data", clientID + "," + this.level);
 					break;
 				case "client-connect":
 					phase += 1;
@@ -267,6 +270,7 @@ public class Client
 		IDInfo = new HashMap<String,String>();
 		String otherClientSymmetricKey;
 		String otherClientSymmetricKeySrc;
+		String level;
 		
 		if(messageReceivedType.equals("connect"))
 		{
@@ -288,13 +292,17 @@ public class Client
 						clientDataId = clientData.getString("id");
 						clientDataName = clientData.getString("name");
 						clientDataPublicKey = clientData.getString("ciphers");
+						level = clientData.getString("data");
 						
-						if(!this.id.equals(clientDataId))
+						System.out.println("this.level " + this.level + " VS level " + level);
+						
+						if(!this.id.equals(clientDataId) && Integer.parseInt(level) <= Integer.parseInt(this.level))
 						{
 							IDInfo = new HashMap<String,String>();
 							IDInfo.put("name", clientDataName);
 							IDInfo.put("publicKey", clientDataPublicKey);
 							IDInfo.put("symmetricKey", null);
+							IDInfo.put("level", level);
 							//System.out.println(clientDataName + " " + clientDataPublicKey + " -> " +  clientDataId);
 							mapID_KEYS.put(clientDataId, IDInfo);
 						}
@@ -394,7 +402,7 @@ public class Client
 		{
 			for(String id : idKey)
 			{
-				if(!id.equals(this.id))
+				if(!id.equals(this.id) && Integer.parseInt(mapID_KEYS.get(id).get("level")) <= Integer.parseInt(this.level) )
 					cleints.add("ID: " + id + ", Name: "  + mapID_KEYS.get(id).get("name"));
 			}
 		}
