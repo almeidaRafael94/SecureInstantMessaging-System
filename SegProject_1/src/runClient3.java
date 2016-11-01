@@ -31,7 +31,7 @@ public class runClient3 {
 	        address = InetAddress.getByName(host);
 	        socket = new Socket(address, port);
 	        
-	        Client3 = new Client("Francisco Pinto", "3");
+	        Client3 = new Client("Francisco Pinto", "1");
 	        
 	        menu();
 			
@@ -62,7 +62,8 @@ public class runClient3 {
 		System.out.println("                  |     6 - client-connect 	|");
 		System.out.println("                  |     7 - client-comm 	|");
 		System.out.println("                  |     8 - show secret key |");
-		System.out.println("                  |     9 - Disconnect    	|");
+		System.out.println("                  |     9 -  diffie hellman |");
+		System.out.println("                  |     10 - Disconnect    	|");
 		System.out.println("                  |     0 - Sair          	|");
 		System.out.println("                  =========================\n");
 		do {
@@ -101,8 +102,11 @@ public class runClient3 {
 				Client3.showSecretKeyStore();
 				break;
 			case 9:
+				Client3.viewDiffieHellmanStructure();
+				 break;
+			case 10:
 				Client3.disconnect();
-				break;
+				 break;
 			default:
 				System.out.println("Opção Inválida!");
 				break;

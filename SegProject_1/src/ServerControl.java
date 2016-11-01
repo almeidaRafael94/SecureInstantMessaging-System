@@ -34,7 +34,7 @@ getClientLevel (String level)
 	String a = null;
     for (ClientDescription c: clients) 
     {
-    	int l = Integer.parseInt(c.description.getAsJsonObject().get("data").getAsString());
+    	int l = Integer.parseInt(((JsonObject) c.description.getAsJsonObject().get("data")).get("level").getAsString());
     		if(l <= Integer.parseInt(level))
     			 if (a == null) {
     				a = c.description.toString(); 
