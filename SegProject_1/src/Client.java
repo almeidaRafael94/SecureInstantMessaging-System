@@ -3,6 +3,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -10,9 +11,11 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +30,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -40,6 +45,9 @@ public class Client
 	
 	// Map with secret key by client_id
 	private static Map<String, SecretKey> secret;
+	
+	// Map with secretX and secretValue by client_id
+	private static Map<String, JSONObject> secretDiffieHellman;
 	
 	//Save last message received by each client
 	private static Map<String , String> messages;
@@ -79,13 +87,25 @@ public class Client
 	private String dst;
 	private String level;
 	
+	//Diffie-Hellman
+	SecureRandom rnd;
+	private int bitLength = 512;
+	private BigInteger p;
+	private BigInteger g;
+	private BigInteger A;
+	private BigInteger B;
+	private BigInteger secretB;
+	private BigInteger secretA;
+	private BigInteger secretX;
+	private int s;
+	
 	public Client(String userName, String level) throws NoSuchAlgorithmException, IOException
 	{	
 		encryptClass = new Encryptation();
 		keyPair = encryptClass.generateAsymmetricKey(1024);
 		secret =  new HashMap<String, SecretKey>();
 		messages = new HashMap<String,String>();
-		
+		secretDiffieHellman = new HashMap<String, JSONObject>();
 		mapID_KEYS = new HashMap<String, Map<String, String>>();
 		
 		if(level != null)
@@ -166,17 +186,32 @@ public class Client
 		this.type = type;
 		json = new JsonObject();
 		json.addProperty("type", type);
+		JsonObject jsonData;
 		
 		if(type.equals("connect"))
 		{	
+			
 			phase += 1;
+			jsonData = new JsonObject();
+		    rnd = new SecureRandom();
+		    p = BigInteger.probablePrime(bitLength, rnd);
+		    g = BigInteger.probablePrime(bitLength, rnd);
+			
+			jsonData.addProperty("level",this.level);
+			jsonData.addProperty("public",Base64.encode(keyPair.getPublic().getEncoded()));
+			jsonData.addProperty("p",this.p);
+			jsonData.addProperty("g",this.g);
+			//jsonData.addProperty("A",this.A);
+			
 	    	ciphers = Base64.encode(keyPair.getPublic().getEncoded());
-	    	json.addProperty("type", type);
+	    	//json.addProperty("type", type);
 	        json.addProperty("phase", phase);
 	        json.addProperty("name", client_name);
 	        json.addProperty("id", id);
 	        json.addProperty("ciphers",ciphers);
 	        json.addProperty("data", this.level);
+	        json.add("data", jsonData);
+	        
 	        
 		}
 		else if(type.equals("secure"))
@@ -184,7 +219,8 @@ public class Client
 			ciphers = " ";
 			payload = new JsonObject();
 			payload.addProperty("type", payloadType);
-			json.addProperty("sa_data", data);
+			json.addProperty("sa_data", "<JSON or base64 encoded if binary (optional)>");
+			SecretKey sk;
 			
 			switch(payloadType)
 			{	
@@ -192,43 +228,75 @@ public class Client
 					payload.addProperty("data", clientID + "," + this.level);
 					break;
 				case "client-connect":
-					phase += 1;
-					SecretKey sk = Encryptation.generateAESKey();
+					
+					phase += 1;	
+					
+					jsonData = new JsonObject();
+					
+					sk = Encryptation.generateAESKey();
 					secret.put(dst, sk);
-					System.out.print(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
+					System.out.println(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
 					String KEYencrypted = "";
-					showResults();
+					showResults();					
 					if(mapID_KEYS.containsKey(dst))
 					{	
 						System.out.println(mapID_KEYS.get(dst).get("publicKey"));
 						KEYencrypted = Encryptation.encrypt(Encryptation.convertAESkeyToString(sk), mapID_KEYS.get(dst).get("publicKey"));
 						System.out.println(client_name + " Encryptation of symetric key sucessfull");
+						
+						IDInfo = new HashMap<String,String>();
+						secretA = new BigInteger(bitLength-2 , rnd);
+						IDInfo = mapID_KEYS.get(dst);
+					    BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
+					    BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
+						A = g2.modPow(secretA, p2);
+						
+						JSONObject j = new JSONObject();
+						j.put("p" , p2);
+						j.put("g" , g2);
+						j.put("A", A);
+						j.put("secret", secretA);
+						secretDiffieHellman.put(dst, j);
+						
+						jsonData.addProperty("AESKeyEncrypted", KEYencrypted);
+						jsonData.addProperty("A", A);
 					}
-					ciphers = KEYencrypted;
-					data = "Client1 to Client 2: hi :)";
+					
+					//ciphers = KEYencrypted;
+					data = KEYencrypted;
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
 					payload.addProperty("phase", phase);
 					payload.addProperty("ciphers", ciphers);
-					payload.addProperty("data", data);
+					//payload.addProperty("data", data);
+					payload.add("data", jsonData);
 					
 					break;
 				case "client-com":
 					if(text != null && !text.equals("") && !text.trim().isEmpty())
+					{
 						data = text;
-					else
-						data = "Text example";
-					
-					if(secret.containsKey(dst))
-					{	
-						System.out.println(client_name + "-------->" + dst);
-						if(secret.get(dst) != null)
-							data = Encryptation.encryptAES(data, secret.get(dst));			  
+						jsonData = new JsonObject();
+						
+						if(secret.containsKey(dst))
+						{	
+							System.out.println(client_name + "-------->" + dst);
+							if(secret.get(dst) != null)
+							{
+								
+								sk = Encryptation.generateAESKey();
+								secret.put(dst, sk);
+								KEYencrypted = Encryptation.encrypt(Encryptation.convertAESkeyToString(sk), mapID_KEYS.get(dst).get("publicKey"));
+								jsonData.addProperty("AESKeyEncrypted", KEYencrypted);
+								jsonData.addProperty("encryptedText", Encryptation.encryptAES(data, sk));
+							
+							}
+						}
+						payload.addProperty("src", this.id);
+						payload.addProperty("dst", dst);
+						//payload.addProperty("data", data);
+						payload.add("data", jsonData);
 					}
-					payload.addProperty("src", this.id);
-					payload.addProperty("dst", dst);
-					payload.addProperty("data", data);
-					
 					break;	
 				case "client-disconnect":
 					payload.addProperty("src", this.id);
@@ -237,9 +305,12 @@ public class Client
 					
 					break;
 				case "ack":
+					jsonData = new JsonObject();
+					jsonData.addProperty("B", text);
 					payload.addProperty("src", this.id);
 					payload.addProperty("dst", dst);
-					payload.addProperty("data", data);
+					//payload.addProperty("data", text);
+					payload.add("data", jsonData);
 					
 					break;
 			}
@@ -275,6 +346,9 @@ public class Client
 		String otherClientSymmetricKeySrc;
 		String level;
 		
+		
+		JSONObject j = new JSONObject();
+		
 		if(messageReceivedType.equals("connect"))
 		{
 			
@@ -286,18 +360,24 @@ public class Client
 			switch(payloadType)
 			{	
 				case "list":
-					// GET public keys of different clients
+					// GET public keys of different clients and other informations like p and g values
 					listData = messageReceivedPayload.getJSONArray("data");
 					for(int i = 0; i < listData.length(); i++)
-					{
+					{	
 						IDInfo = new HashMap<String,String>();
 						clientData = listData.getJSONObject(i);
 						clientDataId = clientData.getString("id");
 						clientDataName = clientData.getString("name");
-						clientDataPublicKey = clientData.getString("ciphers");
-						level = clientData.getString("data");
+						//clientDataPublicKey = clientData.getString("ciphers");
+						//level = clientData.getString("data");
+						j = clientData.getJSONObject("data");
+						level = j.getString("level");
+						String p = j.getString("p");
+						String g = j.getString("g");
+						clientDataPublicKey = j.getString("public");
 						
-						System.out.println("this.level " + this.level + " VS level " + level);
+						
+						//System.out.println("this.level " + this.level + " VS level " + level + " p : " + p + " g: " + g);
 						
 						if(!this.id.equals(clientDataId) && Integer.parseInt(level) <= Integer.parseInt(this.level))
 						{
@@ -306,6 +386,8 @@ public class Client
 							IDInfo.put("publicKey", clientDataPublicKey);
 							IDInfo.put("symmetricKey", null);
 							IDInfo.put("level", level);
+							IDInfo.put("p", p);
+							IDInfo.put("g", g);
 							//System.out.println(clientDataName + " " + clientDataPublicKey + " -> " +  clientDataId);
 							mapID_KEYS.put(clientDataId, IDInfo);
 						}
@@ -313,28 +395,61 @@ public class Client
 					break;
 					
 				case "client-connect":
-					otherClientSymmetricKey = messageReceivedPayload.getString("ciphers");
+					
+					j = messageReceivedPayload.getJSONObject("data");
+					otherClientSymmetricKey = j.getString("AESKeyEncrypted");
+					B = new BigInteger(j.getString("A").toString());
+					//otherClientSymmetricKey = messageReceivedPayload.getString("data");
 					otherClientSymmetricKeySrc = messageReceivedPayload.getString("src");
 					//System.out.println("SRC ID: "  +otherClientSymmetricKeySrc + " SK-> " + otherClientSymmetricKey);
 					SecretKey sk = Encryptation.decrypt(otherClientSymmetricKey, keyPair.getPrivate());
 					String secureKeyStr = Encryptation.convertAESkeyToString(sk);
-					System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc +" and save it");
+					System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc + " B: " + B + " and save it");
 					
 					IDInfo = new HashMap<String,String>();
 					if(mapID_KEYS.containsKey(otherClientSymmetricKeySrc))
 						IDInfo = mapID_KEYS.get(otherClientSymmetricKeySrc);
 					IDInfo.put("symmetricKey",secureKeyStr);
+					IDInfo.put("B",B.toString());
+					secretA = new BigInteger(bitLength-2 , rnd);
+					A = g.modPow(secretA, p);
+					IDInfo.put("A",A.toString());
+					secretX = B.modPow(secretA, p);
 					mapID_KEYS.put(otherClientSymmetricKeySrc,IDInfo);
 					
+					j = new JSONObject();
+					j.put("p" , p);
+					j.put("g" , g);
+					j.put("B", A);
+					j.put("secret", secretA);
+					j.put("secretX", secretX);
+					System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
+									  + "p: " + p + "\n" 
+									  + "g: " + g + "\n"
+									  + "secret: " + secretA + "\n"
+									  + "secretX: " + secretX + "\n");
+					secretDiffieHellman.put(otherClientSymmetricKeySrc, j);
 					secret.put(otherClientSymmetricKeySrc, sk);
 					//System.out.println(CipheringSymmetricKey(keyPair,otherClientSymmetricKey));
 					showResults();
+					setDst(otherClientSymmetricKeySrc);
+					send("secure", "ack", null, A.toString());
 					break;
 				case "client-disconnect":
 					break;
 				case "client-com":
 					String srcIdClient = messageReceivedPayload.getString("src");
-					String clearText = messageReceivedPayload.getString("data");
+					j = messageReceivedPayload.getJSONObject("data");
+					String clearText = j.getString("encryptedText");
+					String encryptedKey = j.getString("AESKeyEncrypted");
+					sk = Encryptation.decrypt(encryptedKey, keyPair.getPrivate());
+					secureKeyStr = Encryptation.convertAESkeyToString(sk);
+					secret.put(srcIdClient, sk);
+					IDInfo = new HashMap<String,String>();
+					if(mapID_KEYS.containsKey(srcIdClient))
+						IDInfo = mapID_KEYS.get(srcIdClient);
+					IDInfo.put("symmetricKey",secureKeyStr);
+					mapID_KEYS.put(srcIdClient,IDInfo);
 
 					if(!clearText.equals(""))
 					{
@@ -348,10 +463,30 @@ public class Client
 							}		
 						}
 					}
-					System.out.println(client_name + " Clear text: " + clearText + "Message map: " + messages.toString());
+					System.out.println(client_name + " Clear text: " + clearText + " Message map: " + messages.toString());
 					
 					break;
 				case "ack":
+					srcIdClient = messageReceivedPayload.getString("src");
+					System.out.println("ACK RECEIVED!!!!");
+					j = messageReceivedPayload.getJSONObject("data");
+					B = new BigInteger(j.getString("B"));
+					if(secretDiffieHellman.containsKey(srcIdClient))
+					{
+						IDInfo = mapID_KEYS.get(dst);
+					    BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
+					    BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
+						JSONObject a = new JSONObject();
+						a = secretDiffieHellman.get(srcIdClient);
+						secretX = B.modPow(new BigInteger(a.getString("secret")), p2);
+						a.put("secretX", secretX);
+						secretDiffieHellman.put(srcIdClient, a);
+						System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
+								  + "p: " + p2 + "\n" 
+								  + "g: " + g2 + "\n"
+								  + "secret: " + secretA + "\n"
+								  + "secretX: " + secretX + "\n");
+					}
 					break;
 			}
 		}
@@ -416,6 +551,13 @@ public class Client
 	}
 	public String getLastMessage(String username)
 	{
-		return messages.get(username);
+		if(messages.containsKey(username))
+			return messages.get(username);
+		return null;
+	}
+	
+	public void viewDiffieHellmanStructure()
+	{
+		System.out.println("------------------------- DIFFIE-HELLMAN STRUCT-------------------\n" + secretDiffieHellman + "\n END DIFFIE-HELLMAN STRUCT");
 	}
 }

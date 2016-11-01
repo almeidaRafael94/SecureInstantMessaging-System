@@ -63,7 +63,8 @@ public class runClient2 {
 		System.out.println("                  |     6 - client-connect 	|");
 		System.out.println("                  |     7 - client-comm 	|");
 		System.out.println("                  |     8 - show secret key |");
-		System.out.println("                  |     9 - Disconnect    	|");
+		System.out.println("                  |     9 -  diffie hellman |");
+		System.out.println("                  |     10 - Disconnect    	|");
 		System.out.println("                  |     0 - Sair          	|");
 		System.out.println("                  =========================\n");
 		do {
@@ -97,14 +98,17 @@ public class runClient2 {
 				System.out.println("Insert message to send");
 				String msg = sc2.nextLine();
 				client2.send("secure", "client-com", null, msg);
-				client2.send("secure", "client-connect", null, null);
+				//client2.send("secure", "client-connect", null, null);
 				break;
 			case 8:
 				client2.showSecretKeyStore();
 				break;
 			case 9:
-				client2.disconnect();
-				break;
+				 client2.viewDiffieHellmanStructure();
+				 break;
+			case 10:
+				 client2.disconnect();
+				 break;
 			default:
 				System.out.println("Opção Inválida!");
 				break;
