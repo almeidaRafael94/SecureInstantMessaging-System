@@ -88,7 +88,6 @@ public class Client
 	private String level;
 	
 	//Diffie-Hellman
-	SecureRandom rnd;
 	private int bitLength = 512;
 	private BigInteger p;
 	private BigInteger g;
@@ -190,28 +189,26 @@ public class Client
 		
 		if(type.equals("connect"))
 		{	
-			
 			phase += 1;
+			
 			jsonData = new JsonObject();
-		    rnd = new SecureRandom();
-		    p = BigInteger.probablePrime(bitLength, rnd);
-		    g = BigInteger.probablePrime(bitLength, rnd);
+		    p = BigInteger.probablePrime(bitLength, new SecureRandom());
+		    g = BigInteger.probablePrime(bitLength, new SecureRandom());
 			
 			jsonData.addProperty("level",this.level);
 			jsonData.addProperty("public",Base64.encode(keyPair.getPublic().getEncoded()));
-			jsonData.addProperty("p",this.p);
-			jsonData.addProperty("g",this.g);
-			//jsonData.addProperty("A",this.A);
+			//jsonData.addProperty("p",this.p);
+			//jsonData.addProperty("g",this.g);
 			
-	    	ciphers = Base64.encode(keyPair.getPublic().getEncoded());
+	    	//ciphers = Base64.encode(keyPair.getPublic().getEncoded());
 	    	//json.addProperty("type", type);
 	        json.addProperty("phase", phase);
 	        json.addProperty("name", client_name);
 	        json.addProperty("id", id);
-	        json.addProperty("ciphers",ciphers);
-	        json.addProperty("data", this.level);
-	        json.add("data", jsonData);
-	        
+	        json.addProperty("ciphers","RSA");
+	        //json.addProperty("ciphers",ciphers);
+	        //json.addProperty("data", this.level);
+	        json.add("data", jsonData);	        
 	        
 		}
 		else if(type.equals("secure"))
@@ -230,36 +227,49 @@ public class Client
 				case "client-connect":
 					
 					phase += 1;	
-					
 					jsonData = new JsonObject();
+					String KEYencrypted = "";	
 					
-					sk = Encryptation.generateAESKey();
-					secret.put(dst, sk);
-					System.out.println(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
-					String KEYencrypted = "";
-					showResults();					
 					if(mapID_KEYS.containsKey(dst))
 					{	
+						sk = Encryptation.generateAESKey();
+						secret.put(dst, sk);
+						System.out.println(client_name + " try encrypt secretKey Str: " + Encryptation.convertAESkeyToString(sk) + " or SecretKey: "+ sk + " with publicKey: ");
+						showResults();	
+						
 						System.out.println(mapID_KEYS.get(dst).get("publicKey"));
 						KEYencrypted = Encryptation.encrypt(Encryptation.convertAESkeyToString(sk), mapID_KEYS.get(dst).get("publicKey"));
 						System.out.println(client_name + " Encryptation of symetric key sucessfull");
 						
 						IDInfo = new HashMap<String,String>();
-						secretA = new BigInteger(bitLength-2 , rnd);
+						secretA = new BigInteger(bitLength-2 , new SecureRandom());
 						IDInfo = mapID_KEYS.get(dst);
-					    BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
-					    BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
-						A = g2.modPow(secretA, p2);
+					   // BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
+					    //BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
+					    //A = g2.modPow(secretA, p2);
+					    
+					    BigInteger pTeste = BigInteger.probablePrime(bitLength, new SecureRandom());
+					    BigInteger gTeste = BigInteger.probablePrime(bitLength, new SecureRandom());
+					    BigInteger ATeste = gTeste.modPow(secretA, pTeste);
+					    
 						
 						JSONObject j = new JSONObject();
-						j.put("p" , p2);
-						j.put("g" , g2);
-						j.put("A", A);
+						//j.put("p" , p2);
+						//j.put("g" , g2);
+						//j.put("A", A);
+						
+						j.put("p" , pTeste);
+						j.put("g" , gTeste);
+						j.put("A" , ATeste);
 						j.put("secret", secretA);
 						secretDiffieHellman.put(dst, j);
 						
 						jsonData.addProperty("AESKeyEncrypted", KEYencrypted);
-						jsonData.addProperty("A", A);
+						//jsonData.addProperty("A", A);	
+						jsonData.addProperty("A", ATeste);
+						jsonData.addProperty("p", pTeste);
+						jsonData.addProperty("g", gTeste);
+						
 					}
 					
 					//ciphers = KEYencrypted;
@@ -269,26 +279,28 @@ public class Client
 					payload.addProperty("phase", phase);
 					payload.addProperty("ciphers", ciphers);
 					//payload.addProperty("data", data);
-					payload.add("data", jsonData);
+					payload.add("data", jsonData);				
 					
 					break;
 				case "client-com":
-					if(text != null && !text.equals("") && !text.trim().isEmpty())
+					if(text != null 
+						&& !text.equals("") 
+						&& !text.trim().isEmpty())
 					{
-						data = text;
 						jsonData = new JsonObject();
 						
-						if(secret.containsKey(dst))
+						if(mapID_KEYS.containsKey(dst) && secret.containsKey(dst) && secretDiffieHellman.containsKey(dst))
 						{	
 							System.out.println(client_name + "-------->" + dst);
-							if(secret.get(dst) != null)
+							if(secret.get(dst) != null && secretDiffieHellman.get(dst).get("secretX") != null)
 							{
 								
 								sk = Encryptation.generateAESKey();
 								secret.put(dst, sk);
 								KEYencrypted = Encryptation.encrypt(Encryptation.convertAESkeyToString(sk), mapID_KEYS.get(dst).get("publicKey"));
 								jsonData.addProperty("AESKeyEncrypted", KEYencrypted);
-								jsonData.addProperty("encryptedText", Encryptation.encryptAES(data, sk));
+								System.out.println(secretDiffieHellman.get(dst).get("secretX").toString().length());
+								jsonData.addProperty("encryptedText", Encryptation.encryptAES(secretDiffieHellman.get(dst).get("secretX") + text, sk));
 							
 							}
 						}
@@ -372,8 +384,8 @@ public class Client
 						//level = clientData.getString("data");
 						j = clientData.getJSONObject("data");
 						level = j.getString("level");
-						String p = j.getString("p");
-						String g = j.getString("g");
+						//String p = j.getString("p");
+						//String g = j.getString("g");
 						clientDataPublicKey = j.getString("public");
 						
 						
@@ -386,8 +398,8 @@ public class Client
 							IDInfo.put("publicKey", clientDataPublicKey);
 							IDInfo.put("symmetricKey", null);
 							IDInfo.put("level", level);
-							IDInfo.put("p", p);
-							IDInfo.put("g", g);
+							//IDInfo.put("p", p);
+							//IDInfo.put("g", g);
 							//System.out.println(clientDataName + " " + clientDataPublicKey + " -> " +  clientDataId);
 							mapID_KEYS.put(clientDataId, IDInfo);
 						}
@@ -399,6 +411,8 @@ public class Client
 					j = messageReceivedPayload.getJSONObject("data");
 					otherClientSymmetricKey = j.getString("AESKeyEncrypted");
 					B = new BigInteger(j.getString("A").toString());
+					p = new BigInteger(j.getString("p").toString());
+					g = new BigInteger(j.getString("g").toString());
 					//otherClientSymmetricKey = messageReceivedPayload.getString("data");
 					otherClientSymmetricKeySrc = messageReceivedPayload.getString("src");
 					//System.out.println("SRC ID: "  +otherClientSymmetricKeySrc + " SK-> " + otherClientSymmetricKey);
@@ -411,7 +425,8 @@ public class Client
 						IDInfo = mapID_KEYS.get(otherClientSymmetricKeySrc);
 					IDInfo.put("symmetricKey",secureKeyStr);
 					IDInfo.put("B",B.toString());
-					secretA = new BigInteger(bitLength-2 , rnd);
+					
+					secretA = new BigInteger(bitLength-2 , new SecureRandom());
 					A = g.modPow(secretA, p);
 					IDInfo.put("A",A.toString());
 					secretX = B.modPow(secretA, p);
@@ -420,7 +435,8 @@ public class Client
 					j = new JSONObject();
 					j.put("p" , p);
 					j.put("g" , g);
-					j.put("B", A);
+					j.put("A", A);
+					j.put("B", B);
 					j.put("secret", secretA);
 					j.put("secretX", secretX);
 					System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
@@ -441,6 +457,7 @@ public class Client
 					String srcIdClient = messageReceivedPayload.getString("src");
 					j = messageReceivedPayload.getJSONObject("data");
 					String clearText = j.getString("encryptedText");
+					
 					String encryptedKey = j.getString("AESKeyEncrypted");
 					sk = Encryptation.decrypt(encryptedKey, keyPair.getPrivate());
 					secureKeyStr = Encryptation.convertAESkeyToString(sk);
@@ -458,8 +475,15 @@ public class Client
 							if(secret.get(srcIdClient) != null)
 							{	
 								clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
-								if(clearText != null)
-									messages.put(this.client_name, clearText);
+								String otherClientSecret = clearText.substring(0, secretDiffieHellman.get(srcIdClient).getString("secretX").length());
+								String clearText2 = clearText.substring(secretDiffieHellman.get(srcIdClient).getString("secretX").length());
+								System.out.println(otherClientSecret.equals( secretDiffieHellman.get(srcIdClient).getString("secretX")));
+								if(clearText2 != null && otherClientSecret.equals( secretDiffieHellman.get(srcIdClient).getString("secretX")))
+									messages.put(this.client_name, clearText2);
+								System.out.println("Total: " + clearText );
+								System.out.println("Text:  " + clearText2);
+								System.out.println("OtherClientSecret: " + otherClientSecret);
+								System.out.println("MySecret: " + secretDiffieHellman.get(srcIdClient).getString("secretX"));
 							}		
 						}
 					}
@@ -473,17 +497,18 @@ public class Client
 					B = new BigInteger(j.getString("B"));
 					if(secretDiffieHellman.containsKey(srcIdClient))
 					{
-						IDInfo = mapID_KEYS.get(dst);
-					    BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
-					    BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
+						//IDInfo = mapID_KEYS.get(dst);
+					    //BigInteger p2 =  new BigInteger(IDInfo.get("p").toString());
+					    //BigInteger g2 =  new BigInteger(IDInfo.get("g").toString());
 						JSONObject a = new JSONObject();
 						a = secretDiffieHellman.get(srcIdClient);
-						secretX = B.modPow(new BigInteger(a.getString("secret")), p2);
+						secretX = B.modPow(new BigInteger(a.getString("secret")), new BigInteger(a.get("p").toString()));
 						a.put("secretX", secretX);
+						a.put("B", B);
 						secretDiffieHellman.put(srcIdClient, a);
 						System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
-								  + "p: " + p2 + "\n" 
-								  + "g: " + g2 + "\n"
+								  + "p: " + a.get("p") + "\n" 
+								  + "g: " + a.get("g") + "\n"
 								  + "secret: " + secretA + "\n"
 								  + "secretX: " + secretX + "\n");
 					}
