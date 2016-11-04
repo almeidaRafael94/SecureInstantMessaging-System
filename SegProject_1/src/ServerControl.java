@@ -129,8 +129,8 @@ getClientStream ( String id )
 {
     for (ClientDescription c: clients) {
         if (c.id.equals( id )) {
-	    return c.out;
-	}
+        	return c.out;
+        }
     }
 
     return null;

@@ -107,6 +107,7 @@ public class runClient1 {
 				 client1.viewDiffieHellmanStructure();
 				 break;
 			case 10:
+				 client1.send("secure", "client-disconnect", null, null);
 				 client1.disconnect();
 				 break;
 			default:

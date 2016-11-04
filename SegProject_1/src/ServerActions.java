@@ -35,6 +35,7 @@ readCommand ()
 {
     try {
 	JsonElement data = new JsonParser().parse( in );
+	System.out.println("server actions data : " + data);
 	if (data.isJsonObject()) {
 	    return data.getAsJsonObject();
 	}
@@ -149,29 +150,35 @@ executeCommand ( JsonObject data )
 			    innerCmd.getAsString().equals( "client-disconnect" ) ||
 			    innerCmd.getAsString().equals( "client-com" ) ||
 			    innerCmd.getAsString().equals( "ack" )) {
-		     
-			 // Original 
-			 //JsonElement id = data.get( "dst" );
 			 
 			 // id in the data or payload ?
 		     JsonElement id = payload.get("dst");
 	
 		     if (id == null) {
-			 // send error
-			 sendResult( "secure", "\"payload\"=\"error: dst field missing\"" );
-			 return;
+		    	 // send error
+		    	 sendResult( "secure", "\"payload\"=\"error: dst field missing\"" );
+		    	 return;
 		     }
 	
 		     // src should be checked as well ... 
-	
-		     OutputStream target = registry.getOutputStream( id.getAsString() );
+		     
+		     OutputStream target = null;
+		     try{
+		    	 target = registry.getOutputStream( id.getAsString() );
+		     }
+		     catch(Exception e){}
+		     
+		     if(innerCmd.getAsString().equals( "client-disconnect" ))
+		     {
+		    	 registry.removeClient(payload.get("src").toString()); 
+		     }
 		     
 		     if (target == null) {
-			 // send error
-			 sendResult( "secure", "\"payload\"=\"error: dst not found\"" );
-			 return;
+		    	 // send error
+		    	 sendResult( "secure", "\"payload\"=\"error: dst not found\"" );
+		    	 return;
 		     }
-	
+		     
 		     try {
 		     String toSend =  data.toString() + "\n"; 
 			 target.write( toSend.getBytes( StandardCharsets.UTF_8 ));
