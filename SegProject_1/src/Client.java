@@ -522,16 +522,27 @@ public class Client
 	// client disconnect 
 	public void disconnect()
     {
-    	try
-    	{
-    		//is.close();
-    		//os.close();
-    	    //in.close();
-    		thread.interrupt();
-	    	socket.shutdownInput();
-	    	socket.shutdownOutput();
-    	}
-    	catch(Exception e){}
+		boolean historyEmpty = true;
+		for(String l: messagesHistory.keySet())
+		{
+			if(!messagesHistory.get(l).isEmpty())
+				historyEmpty = false;	
+		}
+ 
+		if(historyEmpty)
+		{
+	    	try
+	    	{
+	    		is.close();
+	    		os.close();
+	    	    in.close();
+	    		thread.interrupt();
+		    	socket.shutdownInput();
+		    	socket.shutdownOutput();
+		    	socket.close();
+	    	}
+	    	catch(Exception e){}
+		}
     }
 	
 	//Generate identification number
