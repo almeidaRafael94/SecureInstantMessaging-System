@@ -67,6 +67,8 @@ public class ClientDesign implements ActionListener  {
     private String level;
     private Client client;
     
+    private String dstinationID = "";
+    
 
 	/**
 	 * Launch the application.
@@ -209,6 +211,14 @@ public class ClientDesign implements ActionListener  {
 	        	isConnected = false;
 	        	client.disconnect();
 	            color = Color.GREEN;
+	            try {
+					client.send("secure", "client-disconnect", null, null);
+				} catch (InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+						| NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | IOException
+						| JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
         		logMessage = "Disconnected \n";
 	        	btnConnect.setText("Connect");
 	        	sendTextArea.setText("");
@@ -245,10 +255,22 @@ public class ClientDesign implements ActionListener  {
         		else
         		{
         			color = Color.BLUE;
-	        		logMessage = "Client " + username + "send message to" + comboBoxUsernames.getSelectedItem().toString() + "\n";
-	        		client.setDst(id);
+	        		logMessage = "Client " + username + " send message to " + comboBoxUsernames.getSelectedItem().toString() + "\n";
+	        		
 	        		try {
-						client.send("secure", "client-connect", null, null);
+	        			client.setDst(id);
+	        			if(!dstinationID.equals(id) && id != null)
+	        			{
+							client.send("secure", "client-connect", null, null);
+							this.dstinationID = id;
+	        			}
+	        			
+	        			//client needs time between "client-connect" and client-comm because generation of prime numbers can take a few miliseconds
+	        			while(!client.clientContainSecret(id))
+	        			{
+	        				continue;
+	        			}
+	        			
 						client.send("secure", "client-com", null, sendTextArea.getText());
 					} catch (InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
 							| NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | IOException
@@ -291,11 +313,16 @@ public class ClientDesign implements ActionListener  {
         		List<String> clients = client.getClientsList();
         		comboBoxUsernames.removeAllItems();
         		receiveTextArea.removeAll();
-        		for(String client : clients)
+        		if(clients.size() != 0)
         		{
-        			comboBoxUsernames.addItem(client.split(",")[1].split(":")[1].trim());
-        			receiveTextArea.setText(receiveTextArea.getText() + client + "\n");
+	        		for(String client : clients)
+	        		{
+	        			comboBoxUsernames.addItem(client.split(",")[1].split(":")[1].trim());
+	        			receiveTextArea.setText(receiveTextArea.getText() + client + "\n");
+	        		}
         		}
+        		else
+        			receiveTextArea.setText(receiveTextArea.getText() + "Clients not faund" + "\n");
         	}
         }
         else
