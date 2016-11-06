@@ -106,7 +106,6 @@ public class Client
 	{	
 		if(level != null && userName != null)
 		{
-			//encryptClass = new Encryptation();
 			keyPair = Encryptation.generateAsymmetricKey(1024);
 			secret =  new HashMap<String, SecretKey>();
 			messages = new HashMap<String,String>();
@@ -309,7 +308,7 @@ public class Client
 			System.err.println("Invalid command type");
 		}
 		
-		System.out.println("JSON send by: " + client_name + " : " + json.toString());
+		//System.out.println("JSON send by: " + client_name + " : " + json.toString());
 	    os.write(json.toString().getBytes( StandardCharsets.UTF_8 ));
 	    os.flush();
 	}
@@ -319,7 +318,7 @@ public class Client
 				   InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, 
 				   IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException
 	{	
-		System.out.println(client_name + " RESPONSE: " + msg);
+		//System.out.println(client_name + " RESPONSE: " + msg);
 		JSONObject messageReceivedJSON = new JSONObject(msg);
 		String messageReceivedType = messageReceivedJSON.getString("type");
 		JSONObject messageReceivedPayload;
@@ -381,7 +380,7 @@ public class Client
 					otherClientSymmetricKeySrc = messageReceivedPayload.getString("src");
 					SecretKey sk = Encryptation.decrypt(otherClientSymmetricKey, keyPair.getPrivate());
 					String secureKeyStr = Encryptation.convertAESkeyToString(sk);
-					System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc + " B: " + B + " and save it");
+					//System.out.println(client_name + " received secretKey Str:" + secureKeyStr + " or SecretKey: " + sk +" from " + otherClientSymmetricKeySrc + " B: " + B + " and save it");
 					
 					IDInfo = new HashMap<String,String>();
 					if(mapID_KEYS.containsKey(otherClientSymmetricKeySrc))
@@ -402,15 +401,16 @@ public class Client
 					j.put("B", B);
 					j.put("secret", secretA);
 					j.put("secretX", secretX);
+					/*
 					System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
 									  + "p: " + p + "\n" 
 									  + "g: " + g + "\n"
 									  + "secret: " + secretA + "\n"
 									  + "secretX: " + secretX + "\n");
+					*/
 					secretDiffieHellman.put(otherClientSymmetricKeySrc, j);
-					secret.put(otherClientSymmetricKeySrc, sk);
 					
-					showResults();
+					//showResults();
 					
 					setDst(otherClientSymmetricKeySrc);
 					send("secure", "ack", null, A.toString());
@@ -440,28 +440,29 @@ public class Client
 						{
 							if(secret.get(srcIdClient) != null)
 							{	
-								clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
+								//clearText = Encryptation.decryptAES(clearText, secret.get(srcIdClient));
+								clearText = Encryptation.decryptAES(clearText, sk);
 								String otherClientSecret = clearText.substring(0, secretDiffieHellman.get(srcIdClient).getString("secretX").length());
 								String clearText2 = clearText.substring(secretDiffieHellman.get(srcIdClient).getString("secretX").length());
-								System.out.println(otherClientSecret.equals( secretDiffieHellman.get(srcIdClient).getString("secretX")));
+								//System.out.println(otherClientSecret.equals( secretDiffieHellman.get(srcIdClient).getString("secretX")));
 								if(clearText2 != null && otherClientSecret.equals( secretDiffieHellman.get(srcIdClient).getString("secretX")))
 									messages.put(this.client_name, clearText2);
-								System.out.println("Total: " + clearText );
-								System.out.println("Text:  " + clearText2);
-								System.out.println("OtherClientSecret: " + otherClientSecret);
-								System.out.println("MySecret: " + secretDiffieHellman.get(srcIdClient).getString("secretX"));
+								//System.out.println("Total: " + clearText );
+								//System.out.println("Text:  " + clearText2);
+								//System.out.println("OtherClientSecret: " + otherClientSecret);
+								//System.out.println("MySecret: " + secretDiffieHellman.get(srcIdClient).getString("secretX"));
 							}		
 						}
 						send("secure", "ack", null, "client-com " + messageReceivedPayload.getString("src"));
 					}
-					System.out.println(client_name + " Clear text: " + clearText + " Message map: " + messages.toString());
+					//System.out.println(client_name + " Clear text: " + clearText + " Message map: " + messages.toString());
 					
 					break;
 				case "ack":
 					srcIdClient = messageReceivedPayload.getString("src");
-					System.out.println("ACK RECEIVED!!!!");
+					//System.out.println("ACK RECEIVED!!!!");
 					j = messageReceivedPayload.getJSONObject("data");
-					System.out.println("History: " + messagesHistory + " text: " + j.getString("B").split(" ")[0]);
+					//System.out.println("History: " + messagesHistory + " text: " + j.getString("B").split(" ")[0]);
 					
 					if(messagesHistory.containsKey(dst))
 					{
@@ -487,15 +488,16 @@ public class Client
 								a.put("secretX", secretX);
 								a.put("B", B);
 								secretDiffieHellman.put(srcIdClient, a);
-								System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
+								/*System.out.println("SECRET FORMED!!!!!!!!!!! \n" 
 										  + "p: " + a.get("p") + "\n" 
 										  + "g: " + a.get("g") + "\n"
 										  + "secret: " + secretA + "\n"
 										  + "secretX: " + secretX + "\n");
+								*/
 							}
 						}
 					}
-					System.out.println("History: " + messagesHistory);
+					//System.out.println("History: " + messagesHistory);
 					break;
 			}
 		}
@@ -556,11 +558,14 @@ public class Client
 	{
 		this.dst = dst;	
 	}
+	
+	//Return TRUE if this client has generated the secret to other client
 	public boolean clientContainSecret(String id)
 	{
 		return secretDiffieHellman.get(id).has("secretX");
 	}
 	
+	//Return identification number
 	public String getID()
 	{
 		return this.id;
@@ -598,6 +603,6 @@ public class Client
 	
 	public void viewDiffieHellmanStructure()
 	{
-		System.out.println("------------------------- DIFFIE-HELLMAN STRUCT-------------------\n" + secretDiffieHellman + "\n END DIFFIE-HELLMAN STRUCT");
+		System.out.println("--- DIFFIE-HELLMAN STRUCT---\n" + secretDiffieHellman + "\n END DIFFIE-HELLMAN STRUCT");
 	}
 }
