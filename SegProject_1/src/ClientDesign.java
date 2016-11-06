@@ -71,11 +71,6 @@ public class ClientDesign implements ActionListener  {
     
 
 	/**
-	 * Launch the application.
-	 */
-    
-
-	/**
 	 * Create the application.
 	 * @throws IOException 
 	 * @throws NoSuchAlgorithmException 
@@ -196,7 +191,6 @@ public class ClientDesign implements ActionListener  {
 	        	logMessage = "Connection successful \n";
 	        	btnConnect.setText("Disconnect");
 		        sendTextArea.setEnabled(true);
-		        btnSend.setEnabled(true);
 		        receiveTextArea.setEnabled(true);	
 		        try {
 					client.send("connect", "", null, null);
@@ -205,6 +199,7 @@ public class ClientDesign implements ActionListener  {
 						| JSONException e) {
 					e.printStackTrace();
 				}
+		        
 	        }
 	        else if(isConnected && isStarted)
 	        {	
@@ -232,6 +227,7 @@ public class ClientDesign implements ActionListener  {
         else if(actionEvent.getSource() == btnSend)
         {	
         	logMessage = "";
+
         	if(comboBoxUsernames.getSelectedItem().toString().isEmpty())
         	{	
         		JOptionPane.showMessageDialog(null, "Error: destination username not found \n Press the button List Clients to see the clients avaiable ");
@@ -315,6 +311,7 @@ public class ClientDesign implements ActionListener  {
         		receiveTextArea.removeAll();
         		if(clients.size() != 0)
         		{
+        			btnSend.setEnabled(true);
 	        		for(String client : clients)
 	        		{
 	        			comboBoxUsernames.addItem(client.split(",")[1].split(":")[1].trim());
@@ -322,7 +319,10 @@ public class ClientDesign implements ActionListener  {
 	        		}
         		}
         		else
+        		{
         			receiveTextArea.setText(receiveTextArea.getText() + "Clients not faund" + "\n");
+        			btnSend.setEnabled(false);
+        		}
         	}
         }
         else

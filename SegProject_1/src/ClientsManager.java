@@ -103,11 +103,15 @@ public class ClientsManager {
 		
 		textFieldHost = new JTextField();
 		textFieldHost.setColumns(10);
+		textFieldHost.setText("127.0.0.1");
+		textFieldHost.setEnabled(false);
 		textFieldHost.setBounds(6, 70, 136, 28);
 		frmSecurityP.getContentPane().add(textFieldHost);
 		
 		textFieldPort = new JTextField();
 		textFieldPort.setColumns(10);
+		textFieldPort.setText("9090");
+		textFieldPort.setEnabled(false);
 		textFieldPort.setBounds(6, 115, 136, 28);
 		frmSecurityP.getContentPane().add(textFieldPort);
 		
@@ -155,6 +159,7 @@ public class ClientsManager {
 			public void actionPerformed(ActionEvent e) {
 				for(int i=0;i < usersnameList.size(); i++)
 				{
+					comboBoxClients.removeAllItems();
 				    Set<String> Items = usersnameList.keySet();
 				    Object[] s = Items.toArray();
 				    comboBoxClients.addItem(s[i].toString());
