@@ -1,0 +1,29 @@
+Instructions to run and test software in as eclipse project
+
+Using terminal menu:
+	-Run server.java
+	-Run runClient1.java, runClient2.java at least
+	-In each client menu exists the execution flow must be respected
+		 1 - Start  
+		 2 - Connect
+		 3 - List (when already exists other clients on system)
+		 4 - Set dst id  (id of other client)
+		 6 - client-connect
+		 7 - client-comm
+		 ...
+		 3 - List (when already exists other clients on system)
+		 4 - Set dst id  (id of other client)
+		 6 - client-connect
+		 7 - client-comm
+		 ...
+		10 - Disconnect
+
+
+
+Using client interface:
+		1- Start button
+		2 - Connect button
+		3 - Available Users
+		4 - Destination username
+		5 - Sends
+		...
