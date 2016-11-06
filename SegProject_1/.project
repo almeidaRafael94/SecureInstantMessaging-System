@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src/sistema-seguro .pdf</name>
+			<type>1</type>
+			<location>/Users/rafaelalmeida/Desktop/Relatorio1/sistema-seguro .pdf</location>
+		</link>
+	</linkedResources>
 </projectDescription>
